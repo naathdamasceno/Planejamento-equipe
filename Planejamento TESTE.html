@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --verde:#0AE18C;--verde-escuro:#00BF63;--verde-suave:#C9F7E2;
+  --roxo:#7C3AED;--roxo-escuro:#6D28D9;--roxo-suave:#EDE9FE;
+  --ciano:#14C8FA;--ciano-suave:#D6F6FF;
+  --preto:#111111;--cinza:#F2F2F2;--cinza-medio:#E0E0E0;--cinza-texto:#888888;
+  --vermelho:#FF3131;--vermelho-suave:#FFE5E5;--branco:#ffffff;
+  --radius:10px;--radius-lg:16px;--shadow:0 2px 12px rgba(0,0,0,0.07)
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#F7FAF8;color:var(--preto);min-height:100vh}
+#loginScreen{position:fixed;inset:0;background:var(--preto);z-index:999;display:flex;align-items:center;justify-content:center}
+.login-box{background:#1a1a1a;border-radius:20px;padding:36px;width:520px;max-width:95vw;text-align:center;border:1px solid #2a2a2a}
+.login-logo{width:52px;height:52px;background:var(--verde);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
+.login-title{color:var(--branco);font-size:22px;font-weight:600;margin-bottom:4px}
+.login-sub{color:#666;font-size:14px;margin-bottom:24px}
+.login-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+.login-card{padding:14px 10px;border-radius:12px;border:2px solid #2a2a2a;cursor:pointer;transition:all 0.2s;background:#222;text-align:center}
+.login-card:hover{border-color:#444;background:#2a2a2a}
+.login-card.selected{border-color:var(--verde);background:#1e2e27}
+.login-card.selected-roxo{border-color:var(--roxo);background:#1e1a2e}
+.login-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;margin:0 auto 8px}
+.login-name{color:var(--branco);font-weight:600;font-size:13px}
+.login-role{color:#666;font-size:11px;margin-top:2px}
+.login-pin{display:none;margin-bottom:16px}
+.login-pin label{color:#666;font-size:12px;display:block;margin-bottom:6px}
+.login-pin input{width:100%;padding:10px;border-radius:8px;border:1.5px solid #333;background:#222;color:var(--branco);font-family:'DM Sans',sans-serif;font-size:16px;text-align:center;letter-spacing:8px;outline:none}
+.login-pin input:focus{border-color:var(--verde)}
+.btn-entrar{width:100%;padding:12px;border-radius:10px;background:var(--verde);color:var(--preto);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:background 0.15s}
+.btn-entrar:hover{background:#08cc7e}
+.btn-entrar:disabled{background:#2a2a2a;color:#555;cursor:not-allowed}
+header{background:var(--preto);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;color:var(--branco)}
+.logo-dot{width:28px;height:28px;background:var(--verde);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.sync-badge{font-size:11px;padding:3px 8px;border-radius:10px;background:#1e2e27;color:var(--verde);border:1px solid #2a4a37;display:flex;align-items:center;gap:5px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--verde)}
+.sync-dot.pulsing{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
+.user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border-radius:20px;background:#1e1e1e;border:1px solid #333;cursor:pointer}
+.user-pill:hover{background:#252525}
+.user-avatar-sm{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+.user-pill-name{font-size:13px;color:var(--branco)}
+.header-actions{display:flex;gap:8px;align-items:center}
+.btn{padding:7px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s}
+.btn-primary{background:var(--verde);color:var(--preto)}.btn-primary:hover{background:#08cc7e}
+.btn-ghost{background:transparent;color:var(--branco);border:1px solid #333}.btn-ghost:hover{background:#1a1a1a}
+.btn-secondary{background:#222;color:var(--branco);border:1px solid #333}.btn-secondary:hover{background:#2a2a2a}
+.btn-danger{background:var(--vermelho-suave);color:var(--vermelho)}.btn-danger:hover{background:#ffd0d0}
+.btn-mes{background:#1a2e4a;color:var(--ciano);border:1px solid #1e4060}.btn-mes:hover{background:#1e3860}
+.container{max-width:1280px;margin:0 auto;padding:28px 24px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:22px}
+.stat-card{background:var(--branco);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow)}
+.stat-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--cinza-texto);margin-bottom:5px}
+.stat-value{font-size:24px;font-weight:600;letter-spacing:-1px}
+.filters{background:var(--branco);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:22px;box-shadow:var(--shadow)}
+.filters-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:5px;min-width:120px;flex:1}
+.filter-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--cinza-texto)}
+.filter-group input[type=text],.filter-group input[type=date]{padding:8px 11px;border:1.5px solid var(--cinza-medio);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--cinza);color:var(--preto);outline:none;height:36px;transition:border-color 0.15s}
+.filter-group input:focus{border-color:var(--verde)}
+.date-range{display:flex;gap:6px;align-items:center}
+.date-range input[type=date]{flex:1;min-width:0}
+.date-range span{color:var(--cinza-texto);font-size:12px}
+.ms-wrap{position:relative}
+.ms-trigger{padding:8px 11px;border:1.5px solid var(--cinza-medio);border-radius:8px;font-size:13px;background:var(--cinza);color:var(--preto);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;user-select:none;min-height:36px;transition:border-color 0.15s}
+.ms-trigger:hover,.ms-trigger.open{border-color:var(--verde)}
+.ms-trigger-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.ms-trigger-arrow{font-size:10px;color:var(--cinza-texto);transition:transform 0.2s}
+.ms-trigger.open .ms-trigger-arrow{transform:rotate(180deg)}
+.ms-count{background:var(--verde);color:var(--preto);border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700}
+.ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--branco);border:1.5px solid var(--cinza-medio);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:50;max-height:220px;overflow-y:auto;padding:6px}
+.ms-dropdown.open{display:block}
+.ms-option{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px;transition:background 0.12s}
+.ms-option:hover{background:var(--cinza)}.ms-option.selected{background:#f0fdf7}
+.ms-checkbox{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--cinza-medio);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ms-option.selected .ms-checkbox{background:var(--verde-escuro);border-color:var(--verde-escuro);color:var(--branco)}
+.ms-sep{height:1px;background:var(--cinza);margin:4px 0}
+.ms-clear{font-size:12px;color:var(--cinza-texto);padding:5px 10px;cursor:pointer;text-align:center;border-radius:6px}
+.ms-clear:hover{background:var(--cinza);color:var(--vermelho)}
+.table-wrap{background:var(--branco);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+.table-header{padding:18px 22px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--cinza)}
+.table-title{font-size:15px;font-weight:600}
+.table-count{font-size:13px;color:var(--cinza-texto)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--branco);background:var(--preto);white-space:nowrap}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--cinza);vertical-align:middle;line-height:1.4}
+tr:last-child td{border-bottom:none}
+tr.row-yan{background:#F3FDF7}tr.row-nath{background:#F5F3FF}tr.row-ambos{background:#F0FDFF}tr.row-outro{background:#FAFAFA}
+tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
+.dia-row td{background:var(--preto);color:var(--verde);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.9px;padding:7px 14px;border-bottom:none}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-yan{background:var(--verde-suave);color:var(--verde-escuro)}
+.badge-nath{background:var(--roxo-suave);color:var(--roxo-escuro)}
+.badge-ambos{background:var(--ciano-suave);color:#006080}
+.badge-outro{background:var(--cinza);color:var(--cinza-texto)}
+.criado-por{font-size:10px;color:var(--cinza-texto);margin-top:3px;font-style:italic}
+.empresa-tag{font-size:11px;font-weight:700;color:var(--cinza-texto);text-transform:uppercase;letter-spacing:0.4px}
+.action-btn{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;font-size:14px;transition:background 0.12s;color:var(--cinza-texto)}
+.action-btn:hover{background:var(--cinza);color:var(--preto)}
+.readonly-badge{font-size:10px;color:var(--cinza-texto);font-style:italic}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--branco);border-radius:var(--radius-lg);width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
+.modal-header{padding:22px 26px 18px;border-bottom:1.5px solid var(--cinza);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--branco);border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{width:30px;height:30px;border-radius:8px;background:var(--cinza);border:none;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;color:var(--cinza-texto)}
+.modal-close:hover{background:var(--cinza-medio)}
+.modal-body{padding:22px 26px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--cinza-texto)}
+.form-group input,.form-group select,.form-group textarea{padding:8px 11px;border:1.5px solid var(--cinza-medio);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--preto);background:var(--branco);outline:none;transition:border-color 0.15s;resize:vertical}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--roxo)}
+.modal-footer{padding:14px 26px 22px;display:flex;gap:10px;justify-content:flex-end}
+.mes-info{background:var(--cinza);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#444;line-height:1.6}
+.mes-info strong{color:var(--preto)}
+.empty{text-align:center;padding:50px 20px;color:var(--cinza-texto)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--preto);color:var(--branco);padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;border:1px solid #333}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">📋</div>
+    <div class="login-title">Planning</div>
+    <div class="login-sub">Selecione seu perfil para continuar</div>
+    <div class="login-grid">
+      <div class="login-card" onclick="selecionarPerfil('Nath',this)">
+        <div class="login-avatar" style="background:var(--roxo-suave);color:var(--roxo-escuro)">NA</div>
+        <div class="login-name">Nathália</div><div class="login-role">Analista</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Yan',this)">
+        <div class="login-avatar" style="background:var(--verde-suave);color:var(--verde-escuro)">YA</div>
+        <div class="login-name">Yan</div><div class="login-role">Auxiliar</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Matheus',this)">
+        <div class="login-avatar" style="background:#FFF3CD;color:#856404">MA</div>
+        <div class="login-name">Matheus</div><div class="login-role">Especialista</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Gabriela',this)">
+        <div class="login-avatar" style="background:#F8D7DA;color:#842029">GA</div>
+        <div class="login-name">Gabriela</div><div class="login-role">Especialista</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Thiago',this)">
+        <div class="login-avatar" style="background:#D1ECF1;color:#0c5460">TH</div>
+        <div class="login-name">Thiago</div><div class="login-role">Analista</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Gleyce',this)">
+        <div class="login-avatar" style="background:#E2D9F3;color:#432874">GL</div>
+        <div class="login-name">Gleyce</div><div class="login-role">Analista</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Pedro',this)">
+        <div class="login-avatar" style="background:#D4EDDA;color:#155724">PE</div>
+        <div class="login-name">Pedro</div><div class="login-role">Assistente</div>
+      </div>
+      <div class="login-card" onclick="selecionarPerfil('Tatyanne',this)">
+        <div class="login-avatar" style="background:#FFF3CD;color:#856404">TA</div>
+        <div class="login-name">Tatyanne</div><div class="login-role">Supervisora</div>
+      </div>
+    </div>
+    <div class="login-pin" id="pinArea">
+      <label id="pinLabel">PIN de acesso</label>
+      <input type="password" id="pinInput" maxlength="6" placeholder="••••••" oninput="checarPin()" onkeydown="if(event.key==='Enter')entrar()">
+    </div>
+    <button class="btn-entrar" id="btnEntrar" onclick="entrar()" disabled>Entrar</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="logo"><div class="logo-dot">📋</div>Planning</div>
+    <div class="sync-badge"><div class="sync-dot" id="syncDot"></div><span id="syncText">Sincronizado</span></div>
+  </div>
+  <div class="header-actions">
+    <div class="user-pill" onclick="sair()">
+      <div class="user-avatar-sm" id="headerAvatar"></div>
+      <span class="user-pill-name" id="headerName"></span>
+      <span style="font-size:11px;color:#666;margin-left:2px">↩</span>
+    </div>
+    <button class="btn btn-ghost" onclick="recarregarDados()">🔄</button>
+    <button class="btn btn-mes" id="btnNovoMes" onclick="abrirModalMes()">📅 Novo Mês</button>
+    <button class="btn btn-ghost" onclick="exportarExcel()">⬇ Excel</button>
+    <button class="btn btn-primary" id="btnNovaTarefa" onclick="abrirModal()">+ Nova tarefa</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats" id="stats"></div>
+  <div class="filters">
+    <div class="filters-row">
+      <div class="filter-group" style="min-width:180px;flex:2">
+        <label>Buscar</label>
+        <input type="text" id="busca" placeholder="Empresa, atividade, descrição..." oninput="renderTabela()">
+      </div>
+      <div class="filter-group" style="min-width:200px;flex:1.5">
+        <label>Período</label>
+        <div class="date-range">
+          <input type="date" id="filtDataDe" onchange="renderTabela()">
+          <span>→</span>
+          <input type="date" id="filtDataAte" onchange="renderTabela()">
+        </div>
+      </div>
+      <div class="filter-group"><label>Empresa</label><div class="ms-wrap" id="ms-empresa"></div></div>
+      <div class="filter-group"><label>Responsável</label><div class="ms-wrap" id="ms-resp"></div></div>
+      <div class="filter-group"><label>Status</label><div class="ms-wrap" id="ms-status"></div></div>
+      <button class="btn btn-secondary" onclick="limparFiltros()" style="align-self:flex-end;height:36px;flex-shrink:0">Limpar</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">Tarefas</span>
+      <span class="table-count" id="contagem">0 tarefas</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th style="width:110px">Empresa</th>
+          <th style="width:90px">Dia</th>
+          <th style="width:140px">Atividade</th>
+          <th>Descrição</th>
+          <th style="width:70px">Tempo</th>
+          <th style="width:110px">Responsável</th>
+          <th style="width:130px">Status</th>
+          <th style="width:170px">Observações</th>
+          <th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TAREFA -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharSeOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Nova Tarefa</span>
+      <button class="modal-close" onclick="fecharModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Empresa *</label>
+          <input type="text" id="fEmpresa" list="empresasList" placeholder="Ex: Safra Agrícola">
+          <datalist id="empresasList"></datalist>
+        </div>
+        <div class="form-group"><label>Data</label><input type="date" id="fDataCal"></div>
+        <div class="form-group"><label>Atividade *</label><input type="text" id="fAtiv" placeholder="Ex: Financeiro"></div>
+        <div class="form-group"><label>Tempo</label><input type="text" id="fTempo" placeholder="Ex: 30 min"></div>
+        <div class="form-group full"><label>Descrição</label><textarea id="fDesc" rows="2" placeholder="Descreva a tarefa..."></textarea></div>
+        <div class="form-group"><label>Responsável *</label><select id="fResp"></select></div>
+        <div class="form-group"><label>Status</label>
+          <select id="fStatus"><option>Pendente</option><option>Em andamento</option><option>Concluído</option></select>
+        </div>
+        <div class="form-group full"><label>Observações</label><textarea id="fObs" rows="2" placeholder="Notas adicionais..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnExcluir" onclick="excluirTarefa()" style="margin-right:auto;display:none">🗑 Excluir</button>
+      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarTarefa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO MÊS -->
+<div class="modal-overlay" id="modalMesOverlay" onclick="fecharModalMes()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">📅 Replicar para Novo Mês</span>
+      <button class="modal-close" onclick="fecharModalMes()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="mes-info" id="mesInfo"></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Mês de destino *</label>
+          <select id="mesDestino"></select>
+        </div>
+        <div class="form-group">
+          <label>Ano</label>
+          <select id="anoDestino"></select>
+        </div>
+        <div class="form-group full">
+          <label>O que fazer com as tarefas atuais?</label>
+          <select id="opcaoMes">
+            <option value="substituir">Substituir pelas novas (recomendado)</option>
+            <option value="adicionar">Adicionar junto às existentes</option>
+          </select>
+        </div>
+      </div>
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#795548;line-height:1.6">
+        ⚠️ Todas as tarefas serão copiadas com status <strong>Pendente</strong>. As datas serão ajustadas para o mês escolhido. Você poderá excluir as que não se repetem depois.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModalMes()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarNovoMes()">📅 Replicar tarefas</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── CONFIG ─────────────────────────────── */
+const FB = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/.json';
+const PINS = { Nath:'', Yan:'1234', Matheus:'2345', Gabriela:'3456', Thiago:'4567', Gleyce:'5678', Pedro:'6789', Tatyanne:'0000' };
+const DIAS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+const PERFIL_INFO = {
+  Nath:     {bg:'var(--roxo-suave)',fc:'var(--roxo-escuro)',i:'NA',nome:'Nathália'},
+  Yan:      {bg:'var(--verde-suave)',fc:'var(--verde-escuro)',i:'YA',nome:'Yan'},
+  Matheus:  {bg:'#FFF3CD',fc:'#856404',i:'MA',nome:'Matheus'},
+  Gabriela: {bg:'#F8D7DA',fc:'#842029',i:'GA',nome:'Gabriela'},
+  Thiago:   {bg:'#D1ECF1',fc:'#0c5460',i:'TH',nome:'Thiago'},
+  Gleyce:   {bg:'#E2D9F3',fc:'#432874',i:'GL',nome:'Gleyce'},
+  Pedro:    {bg:'#D4EDDA',fc:'#155724',i:'PE',nome:'Pedro'},
+  Tatyanne: {bg:'#FFF3CD',fc:'#856404',i:'TA',nome:'Tatyanne'},
+};
+
+// Permissões: quem cada perfil pode atribuir tarefas
+const RESP_OPTS = {
+  Nath:     ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Yan/Nath'],
+  Tatyanne: ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Yan/Nath'],
+  Matheus:  ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Yan/Nath'],
+  Gabriela: ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Yan/Nath'],
+  Thiago:   ['Thiago','Yan'],
+  Gleyce:   ['Gleyce','Pedro'],
+  Yan:      ['Yan'],
+  Pedro:    ['Pedro'],
+};
+
+let perfil=null, perfilSelecionado=null, tarefas=[], editIndex=-1;
+const msState = { empresa:new Set(), resp:new Set(), status:new Set() };
+
+/* ── TOAST ──────────────────────────────── */
+let toastTimer;
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+/* ── SYNC ───────────────────────────────── */
+function setSyncing(){document.getElementById('syncText').textContent='Sincronizando...';document.getElementById('syncDot').classList.add('pulsing');}
+function setSynced(){document.getElementById('syncText').textContent='Sincronizado';document.getElementById('syncDot').classList.remove('pulsing');document.getElementById('syncDot').style.background='var(--verde)';}
+function setSyncError(){document.getElementById('syncText').textContent='Erro de conexão';document.getElementById('syncDot').style.background='var(--vermelho)';}
+
+/* ── FIREBASE ───────────────────────────── */
+async function fbLer(){
+  const r=await fetch(FB+'?t='+Date.now());
+  if(!r.ok) throw new Error('Erro '+r.status);
+  const d=await r.json();
+  if(!d) return [];
+  if(Array.isArray(d)) return d;
+  // Firebase converte arrays em objetos {0:{...},1:{...}} — converte de volta
+  if(typeof d==='object') return Object.values(d).filter(Boolean);
+  return [];
+}
+async function fbSalvar(d){
+  const r=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+  if(!r.ok) throw new Error('Erro ao salvar '+r.status);
+}
+
+/* ── LOGIN ──────────────────────────────── */
+function selecionarPerfil(p,el){
+  perfilSelecionado=p;
+  document.querySelectorAll('.login-card').forEach(c=>c.classList.remove('selected','selected-roxo'));
+  el.classList.add(p==='Nath'?'selected-roxo':'selected');
+  const pin=PINS[p];
+  const pinArea=document.getElementById('pinArea');
+  if(pin===''){pinArea.style.display='none';document.getElementById('btnEntrar').disabled=false;}
+  else{
+    pinArea.style.display='block';
+    document.getElementById('pinLabel').textContent='PIN – '+p;
+    document.getElementById('pinInput').value='';
+    document.getElementById('btnEntrar').disabled=true;
+    setTimeout(()=>document.getElementById('pinInput').focus(),100);
+  }
+}
+function checarPin(){document.getElementById('btnEntrar').disabled=document.getElementById('pinInput').value!==PINS[perfilSelecionado];}
+
+async function entrar(){
+  if(!perfilSelecionado)return;
+  perfil=perfilSelecionado;
+  document.getElementById('loginScreen').style.display='none';
+  const info=PERFIL_INFO[perfil];
+  const av=document.getElementById('headerAvatar');
+  av.style.background=info.bg; av.style.color=info.fc; av.textContent=info.i;
+  document.getElementById('headerName').textContent=info.nome;
+  // Yan e Pedro não podem criar tarefas para outros, mas podem criar as próprias
+  // Tatyanne agora pode criar
+  const podeNova = true; // todos podem criar (para si ou para quem têm permissão)
+  document.getElementById('btnNovaTarefa').style.display='inline-flex';
+  document.getElementById('btnNovoMes').style.display=['Nath','Tatyanne'].includes(perfil)?'inline-flex':'none';
+  // Filtro padrão
+  if(!['Nath','Tatyanne','Matheus','Gabriela'].includes(perfil)) msState.resp.add(perfil);
+  await carregarDados();
+}
+
+function sair(){
+  if(!confirm('Trocar de perfil?'))return;
+  perfil=null; perfilSelecionado=null;
+  Object.keys(msState).forEach(k=>msState[k].clear());
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('pinInput').value='';
+}
+
+/* ── PERMISSÕES ─────────────────────────── */
+function podEditar(t){
+  if(!t)return false;
+  const r=(t.resp||'').toLowerCase();
+  if(['Nath','Tatyanne','Matheus','Gabriela'].includes(perfil))return true;
+  if(perfil==='Thiago') return r.includes('thiago')||r.includes('yan');
+  if(perfil==='Gleyce') return r.includes('gleyce')||r.includes('pedro');
+  if(perfil==='Yan') return r.includes('yan');
+  if(perfil==='Pedro') return r.includes('pedro');
+  return false;
+}
+function podeVerTudo(){return ['Nath','Tatyanne','Matheus','Gabriela'].includes(perfil);}
+
+/* ── DADOS ──────────────────────────────── */
+async function carregarDados(){
+  setSyncing();
+  try{tarefas=await fbLer();setSynced();}
+  catch(e){setSyncError();toast('Erro ao carregar: '+e.message,4000);tarefas=[];}
+  construirMultiselects();renderStats();renderTabela();
+}
+async function recarregarDados(){
+  setSyncing();
+  try{tarefas=await fbLer();setSynced();toast('✓ Dados atualizados');}
+  catch(e){setSyncError();toast('Erro ao atualizar');}
+  construirMultiselects();renderStats();renderTabela();
+}
+async function salvar(){
+  setSyncing();
+  try{await fbSalvar(tarefas);setSynced();}
+  catch(e){setSyncError();toast('Erro ao salvar: '+e.message,4000);}
+}
+
+/* ── DATA ───────────────────────────────── */
+function calToDia(v){
+  if(!v)return '—';
+  const[y,m,d]=v.split('-').map(Number);
+  const dt=new Date(y,m-1,d);
+  return String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+' '+DIAS_PT[dt.getDay()];
+}
+function diaToDate(dia){
+  if(!dia||dia==='—')return null;
+  const m=dia.match(/^(\d{2})\/(\d{2})/);
+  return m?new Date(2026,parseInt(m[2])-1,parseInt(m[1])):null;
+}
+function diaOrdem(d){
+  if(!d||d==='—')return 0;
+  const m=d.match(/(\d+)\/(\d+)/);
+  return m?parseInt(m[2])*100+parseInt(m[1]):999;
+}
+
+function shiftDiaParaMes(dia, novoMes, novoAno){
+  if(!dia||dia==='—')return '—';
+  const m=dia.match(/^(\d{2})\/(\d{2})/);
+  if(!m)return dia;
+  const day=parseInt(m[1]), month=parseInt(m[2]);
+  // Data original — usa 2026 como ano base
+  const orig=new Date(2026, month-1, day);
+  const diaSemana=orig.getDay(); // 0=Dom … 6=Sáb
+  const ocorrencia=Math.floor((day-1)/7)+1; // 1ª, 2ª, 3ª, 4ª ocorrência no mês
+
+  // Primeira ocorrência desse dia da semana no novo mês
+  const primeiroDia=new Date(novoAno, novoMes-1, 1);
+  const diff=(diaSemana - primeiroDia.getDay()+7)%7;
+  let targetDay=1+diff+(ocorrencia-1)*7;
+
+  // Se ultrapassar o mês, recua uma semana (usa a última ocorrência)
+  const diasNoMes=new Date(novoAno, novoMes, 0).getDate();
+  if(targetDay>diasNoMes) targetDay-=7;
+
+  return calToDia(`${novoAno}-${String(novoMes).padStart(2,'0')}-${String(targetDay).padStart(2,'0')}`);
+}
+
+/* ── MULTISELECT ────────────────────────── */
+function getOpcoes(key){
+  if(key==='empresa')return[...new Set(tarefas.map(t=>t.empresa).filter(Boolean))].sort();
+  if(key==='resp')return['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Yan/Nath'];
+  if(key==='status')return['Pendente','Em andamento','Concluído'];
+  return[];
+}
+function construirMultiselects(){['empresa','resp','status'].forEach(k=>criarMS(k));}
+function criarMS(key){
+  const wrap=document.getElementById('ms-'+key);if(!wrap)return;
+  const ph={empresa:'Todas',resp:'Todos',status:'Todos'}[key];
+  wrap.innerHTML=`<div class="ms-trigger" id="mst-${key}" onclick="toggleMS('${key}')"><span class="ms-trigger-text" id="mstext-${key}">${ph}</span><span class="ms-count" id="mscount-${key}" style="display:none"></span><span class="ms-trigger-arrow">▼</span></div><div class="ms-dropdown" id="msd-${key}"><div class="ms-clear" onclick="clearMS('${key}')">Limpar</div><div class="ms-sep"></div><div id="msopts-${key}"></div></div>`;
+  renderMSOpts(key);
+}
+function renderMSOpts(key){
+  const c=document.getElementById('msopts-'+key);if(!c)return;
+  c.innerHTML=getOpcoes(key).map(o=>`<div class="ms-option ${msState[key].has(o)?'selected':''}" onclick="toggleOpt('${key}','${o.replace(/'/g,"\\'")}')"><div class="ms-checkbox">${msState[key].has(o)?'✓':''}</div><span>${o}</span></div>`).join('');
+  updateMSTrigger(key);
+}
+function updateMSTrigger(key){
+  const sel=msState[key],ph={empresa:'Todas',resp:'Todos',status:'Todos'}[key];
+  const te=document.getElementById('mstext-'+key),ce=document.getElementById('mscount-'+key);
+  if(!sel.size){te.textContent=ph;ce.style.display='none';}
+  else{const a=[...sel];te.textContent=a.length<=2?a.join(', '):a[0]+'…';ce.textContent=a.length;ce.style.display='inline-flex';}
+}
+function toggleMS(key){
+  const drop=document.getElementById('msd-'+key),trig=document.getElementById('mst-'+key),was=drop.classList.contains('open');
+  document.querySelectorAll('.ms-dropdown.open').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.ms-trigger.open').forEach(t=>t.classList.remove('open'));
+  if(!was){drop.classList.add('open');trig.classList.add('open');}
+}
+function toggleOpt(key,val){msState[key].has(val)?msState[key].delete(val):msState[key].add(val);renderMSOpts(key);renderTabela();}
+function clearMS(key){msState[key].clear();renderMSOpts(key);renderTabela();}
+document.addEventListener('click',e=>{if(!e.target.closest('.ms-wrap')){document.querySelectorAll('.ms-dropdown.open').forEach(d=>d.classList.remove('open'));document.querySelectorAll('.ms-trigger.open').forEach(t=>t.classList.remove('open'));}});
+
+/* ── FILTRAR ────────────────────────────── */
+function filtrar(){
+  const busca=(document.getElementById('busca').value||'').toLowerCase();
+  const de=document.getElementById('filtDataDe').value,ate=document.getElementById('filtDataAte').value;
+  const deD=de?new Date(de+'T00:00:00'):null,ateD=ate?new Date(ate+'T23:59:59'):null;
+  return tarefas.filter(t=>{
+    if(busca&&![(t.ativ||''),(t.desc||''),(t.empresa||'')].some(v=>v.toLowerCase().includes(busca)))return false;
+    if(msState.empresa.size>0&&!msState.empresa.has(t.empresa))return false;
+    if(msState.resp.size>0){const rl=(t.resp||'').toLowerCase();if(![...msState.resp].some(r=>rl.includes(r.toLowerCase())))return false;}
+    if(msState.status.size>0&&!msState.status.has(t.status))return false;
+    if(deD||ateD){const dt=diaToDate(t.dia);if(!dt)return false;if(deD&&dt<deD)return false;if(ateD&&dt>ateD)return false;}
+    return true;
+  }).sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
+}
+
+/* ── RENDER ─────────────────────────────── */
+function renderStats(){
+  const tot=tarefas.length,con=tarefas.filter(t=>t.status==='Concluído').length,
+        pen=tarefas.filter(t=>t.status==='Pendente').length,and=tarefas.filter(t=>t.status==='Em andamento').length,
+        pct=tot?Math.round(con/tot*100):0;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${tot}</div></div>
+    <div class="stat-card"><div class="stat-label">Concluído</div><div class="stat-value" style="color:var(--verde-escuro)">${con}</div></div>
+    <div class="stat-card"><div class="stat-label">Em andamento</div><div class="stat-value" style="color:#0088AA">${and}</div></div>
+    <div class="stat-card"><div class="stat-label">Pendente</div><div class="stat-value" style="color:var(--vermelho)">${pen}</div></div>
+    <div class="stat-card"><div class="stat-label">Progresso</div><div class="stat-value" style="color:var(--verde-escuro)">${pct}%</div></div>`;
+}
+
+function badgeResp(t){
+  const rl=(t.resp||'').toLowerCase();
+  const isNath=rl.includes('nath'),isYan=rl.includes('yan');
+  const badge=isNath&&isYan?`<span class="badge badge-ambos">Ambos</span>`:isNath?`<span class="badge badge-nath">Nathália</span>`:isYan?`<span class="badge badge-yan">Yan</span>`:`<span class="badge badge-outro">${t.resp||''}</span>`;
+  const criador=t.criadoPor?`<div class="criado-por">por ${t.criadoPor}</div>`:'';
+  return badge+criador;
+}
+function rowClass(t){
+  const rl=(t.resp||'').toLowerCase();
+  return rl.includes('nath')&&rl.includes('yan')?'row-ambos':rl.includes('nath')?'row-nath':rl.includes('yan')?'row-yan':'row-outro';
+}
+
+function renderTabela(){
+  const lista=filtrar();
+  document.getElementById('contagem').textContent=lista.length+' tarefa'+(lista.length!==1?'s':'');
+  const tbody=document.getElementById('tbody');
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-icon">📋</div><div>Nenhuma tarefa encontrada</div></div></td></tr>`;return;}
+  let html='',prevDia=null;
+  lista.forEach(t=>{
+    const idx=tarefas.indexOf(t);
+    if(t.dia!==prevDia){html+=`<tr class="dia-row"><td colspan="9">${(!t.dia||t.dia==='—')?'Sem data definida':t.dia}</td></tr>`;prevDia=t.dia;}
+    const sc=t.status==='Concluído'?'#00BF63':t.status==='Em andamento'?'#0088AA':'#FF3131';
+    const podeE=podEditar(t);
+    const statusCell=podeE?`<select style="border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:${sc};padding:2px 0;max-width:120px" onchange="mudarStatus(${idx},this.value)"><option ${t.status==='Pendente'?'selected':''}>Pendente</option><option ${t.status==='Em andamento'?'selected':''}>Em andamento</option><option ${t.status==='Concluído'?'selected':''}>Concluído</option></select>`:`<span style="font-size:11px;font-weight:700;color:${sc}">${t.status}</span>`;
+    const editBtn=podeE?`<button class="action-btn" onclick="editarTarefa(${idx})">✏️</button>`:`<span class="readonly-badge">👁</span>`;
+    html+=`<tr class="data-row ${rowClass(t)}" ondblclick="${podeE?`editarTarefa(${idx})`:''}">
+      <td><span class="empresa-tag">${t.empresa||''}</span></td>
+      <td style="color:var(--cinza-texto);font-size:12px">${t.dia||'—'}</td>
+      <td style="font-weight:500">${t.ativ||''}</td>
+      <td style="color:#444;max-width:240px">${t.desc||''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--cinza-texto)">${t.tempo||'—'}</td>
+      <td>${badgeResp(t)}</td>
+      <td>${statusCell}</td>
+      <td style="font-size:12px;color:var(--cinza-texto);max-width:170px">${t.obs||''}</td>
+      <td>${editBtn}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+}
+
+async function mudarStatus(idx,v){
+  if(!podEditar(tarefas[idx]))return;
+  tarefas[idx].status=v;
+  await salvar();renderStats();renderTabela();toast('✓ Status atualizado');
+}
+
+/* ── MODAL TAREFA ───────────────────────── */
+function abrirModal(idx=-1){
+  if(idx!==-1&&!podEditar(tarefas[idx]))return;
+  editIndex=idx;
+  document.getElementById('modalTitle').textContent=idx===-1?'Nova Tarefa':'Editar Tarefa';
+  document.getElementById('btnExcluir').style.display=idx===-1?'none':'inline-flex';
+  const fResp=document.getElementById('fResp');
+  const opts=RESP_OPTS[perfil]||[perfil];
+  fResp.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  const t=idx===-1?{empresa:'',dia:'—',ativ:'',desc:'',tempo:'',resp:opts[0],status:'Pendente',obs:'',criadoPor:perfil}:tarefas[idx];
+  document.getElementById('fEmpresa').value=t.empresa||'';
+  document.getElementById('fAtiv').value=t.ativ||'';
+  document.getElementById('fDesc').value=t.desc||'';
+  document.getElementById('fTempo').value=t.tempo||'';
+  fResp.value=t.resp||opts[0];
+  document.getElementById('fStatus').value=t.status||'Pendente';
+  document.getElementById('fObs').value=t.obs||'';
+  const match=(t.dia||'').match(/^(\d{2})\/(\d{2})/);
+  document.getElementById('fDataCal').value=match?`2026-${match[2]}-${match[1]}`:'';
+  document.getElementById('empresasList').innerHTML=[...new Set(tarefas.map(x=>x.empresa))].sort().map(e=>`<option value="${e}">`).join('');
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('fEmpresa').focus(),50);
+}
+function editarTarefa(idx){abrirModal(idx);}
+function fecharModal(){document.getElementById('modalOverlay').classList.remove('open');editIndex=-1;}
+function fecharSeOverlay(e){if(e.target===document.getElementById('modalOverlay'))fecharModal();}
+
+async function salvarTarefa(){
+  const empresa=document.getElementById('fEmpresa').value.trim();
+  const ativ=document.getElementById('fAtiv').value.trim();
+  if(!empresa||!ativ){alert('Preencha: Empresa e Atividade.');return;}
+  const nova={
+    empresa,ativ,
+    dia:calToDia(document.getElementById('fDataCal').value),
+    desc:document.getElementById('fDesc').value.trim(),
+    tempo:document.getElementById('fTempo').value.trim(),
+    resp:document.getElementById('fResp').value,
+    status:document.getElementById('fStatus').value,
+    obs:document.getElementById('fObs').value.trim(),
+    criadoPor: editIndex===-1 ? perfil : (tarefas[editIndex].criadoPor||perfil),
+  };
+  if(editIndex===-1)tarefas.push(nova);else tarefas[editIndex]=nova;
+  fecharModal();await salvar();construirMultiselects();renderStats();renderTabela();toast('✓ Tarefa salva');
+}
+
+async function excluirTarefa(){
+  if(editIndex===-1)return;
+  if(!podEditar(tarefas[editIndex])){alert('Sem permissão.');return;}
+  if(!confirm(`Excluir "${tarefas[editIndex].ativ||tarefas[editIndex].empresa}"?`))return;
+  tarefas.splice(editIndex,1);
+  fecharModal();await salvar();construirMultiselects();renderStats();renderTabela();toast('🗑 Tarefa excluída');
+}
+
+/* ── MODAL NOVO MÊS ─────────────────────── */
+function abrirModalMes(){
+  // Preenche selects de mês e ano
+  const mesSelect=document.getElementById('mesDestino');
+  const anoSelect=document.getElementById('anoDestino');
+  const agora=new Date();
+  const proximoMes=agora.getMonth()+2; // +1 para próximo mês, +1 porque getMonth é 0-based
+  const anoAtual=agora.getFullYear();
+
+  mesSelect.innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proximoMes||i+1===proximoMes-12?'selected':''}>${m}</option>`).join('');
+  anoSelect.innerHTML=[anoAtual, anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
+
+  document.getElementById('mesInfo').innerHTML=`
+    <strong>${tarefas.length} tarefas</strong> serão copiadas para o novo mês.<br>
+    Todas com status resetado para <strong>Pendente</strong>.<br>
+    Datas serão ajustadas mantendo o mesmo dia do mês.`;
+
+  document.getElementById('modalMesOverlay').classList.add('open');
+}
+function fecharModalMes(){document.getElementById('modalMesOverlay').classList.remove('open');}
+
+async function confirmarNovoMes(){
+  const mes=parseInt(document.getElementById('mesDestino').value);
+  const ano=parseInt(document.getElementById('anoDestino').value);
+  const opcao=document.getElementById('opcaoMes').value;
+  const nomeMes=MESES_PT[mes-1];
+
+  if(!confirm(`Replicar ${tarefas.length} tarefas para ${nomeMes}/${ano}?\n\nOpção: "${document.getElementById('opcaoMes').options[document.getElementById('opcaoMes').selectedIndex].text}"`))return;
+
+  const novasTarefas=tarefas.map(t=>({
+    ...t,
+    dia: shiftDiaParaMes(t.dia, mes, ano),
+    status: 'Pendente',
+    criadoPor: t.criadoPor||perfil,
+  }));
+
+  if(opcao==='substituir') tarefas=novasTarefas;
+  else tarefas=[...tarefas,...novasTarefas];
+
+  fecharModalMes();
+  await salvar();construirMultiselects();renderStats();renderTabela();
+  toast(`✓ ${novasTarefas.length} tarefas replicadas para ${nomeMes}/${ano}!`, 3500);
+}
+
+function limparFiltros(){
+  document.getElementById('busca').value='';
+  document.getElementById('filtDataDe').value='';
+  document.getElementById('filtDataAte').value='';
+  Object.keys(msState).forEach(k=>msState[k].clear());
+  if(!podeVerTudo())msState.resp.add(perfil);
+  construirMultiselects();renderTabela();
+}
+
+/* ── EXPORT ─────────────────────────────── */
+function exportarExcel(){
+  const wb=XLSX.utils.book_new();
+  const s=tarefas.slice().sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
+  const ts=l=>{const r=[['Empresa','Dia','Atividade','Descrição','Tempo','Responsável','Criado por','Status','Observações']];l.forEach(t=>r.push([t.empresa,t.dia,t.ativ,t.desc,t.tempo,t.resp,t.criadoPor||'',t.status,t.obs]));return XLSX.utils.aoa_to_sheet(r);};
+  XLSX.utils.book_append_sheet(wb,ts(s),'Geral');
+  XLSX.utils.book_append_sheet(wb,ts(s.filter(t=>(t.resp||'').toLowerCase().includes('nath'))),'Nathália');
+  XLSX.utils.book_append_sheet(wb,ts(s.filter(t=>(t.resp||'').toLowerCase().includes('yan'))),'Yan');
+  XLSX.writeFile(wb,'Planning_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalMes();}});
+document.getElementById('loginScreen').style.display='flex';
+</script>
+</body>
+</html>

@@ -281,14 +281,13 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
 
 <!-- MODAL NOVO MÊS -->
 <div class="modal-overlay" id="modalMesOverlay" onclick="fecharModalMes()">
-  <div class="modal" onclick="event.stopPropagation()">
+  <div class="modal" style="width:620px" onclick="event.stopPropagation()">
     <div class="modal-header">
       <span class="modal-title">📅 Replicar para Novo Mês</span>
       <button class="modal-close" onclick="fecharModalMes()">×</button>
     </div>
     <div class="modal-body">
-      <div class="mes-info" id="mesInfo"></div>
-      <div class="form-grid">
+      <div class="form-grid" style="margin-bottom:16px">
         <div class="form-group">
           <label>Mês de destino *</label>
           <select id="mesDestino"></select>
@@ -305,13 +304,25 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
           </select>
         </div>
       </div>
-      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#795548;line-height:1.6">
-        ⚠️ Todas as tarefas serão copiadas com status <strong>Pendente</strong>. As datas serão ajustadas para o mês escolhido. Você poderá excluir as que não se repetem depois.
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--cinza-texto)">Selecione as tarefas a replicar</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="selecionarTodasMes(true)">Marcar todas</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="selecionarTodasMes(false)">Desmarcar todas</button>
+        </div>
+      </div>
+
+      <div id="listaTarefasMes" style="max-height:280px;overflow-y:auto;border:1.5px solid var(--cinza-medio);border-radius:10px;padding:6px"></div>
+
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#795548;line-height:1.6">
+        ⚠️ Tarefas selecionadas serão copiadas com status <strong>Pendente</strong> e datas ajustadas para o mês escolhido.
       </div>
     </div>
     <div class="modal-footer">
+      <span id="contadorMes" style="margin-right:auto;font-size:13px;color:var(--cinza-texto)"></span>
       <button class="btn btn-secondary" onclick="fecharModalMes()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarNovoMes()">📅 Replicar tarefas</button>
+      <button class="btn btn-primary" onclick="confirmarNovoMes()">📅 Replicar selecionadas</button>
     </div>
   </div>
 </div>
@@ -660,22 +671,45 @@ async function excluirTarefa(){
 
 /* ── MODAL NOVO MÊS ─────────────────────── */
 function abrirModalMes(){
-  // Preenche selects de mês e ano
   const mesSelect=document.getElementById('mesDestino');
   const anoSelect=document.getElementById('anoDestino');
   const agora=new Date();
-  const proximoMes=agora.getMonth()+2; // +1 para próximo mês, +1 porque getMonth é 0-based
+  const proximoMes=(agora.getMonth()+2)>12?1:(agora.getMonth()+2);
   const anoAtual=agora.getFullYear();
 
-  mesSelect.innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proximoMes||i+1===proximoMes-12?'selected':''}>${m}</option>`).join('');
-  anoSelect.innerHTML=[anoAtual, anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
+  mesSelect.innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proximoMes?'selected':''}>${m}</option>`).join('');
+  anoSelect.innerHTML=[anoAtual,anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
 
-  document.getElementById('mesInfo').innerHTML=`
-    <strong>${tarefas.length} tarefas</strong> serão copiadas para o novo mês.<br>
-    Todas com status resetado para <strong>Pendente</strong>.<br>
-    Datas serão ajustadas mantendo o mesmo dia do mês.`;
+  // Renderiza lista de tarefas com checkbox
+  const lista=document.getElementById('listaTarefasMes');
+  const sorted=[...tarefas].sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
+  lista.innerHTML=sorted.map((t,i)=>{
+    const idx=tarefas.indexOf(t);
+    return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;transition:background 0.12s" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">
+      <input type="checkbox" id="chk_${idx}" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--verde)" onchange="atualizarContadorMes()">
+      <span style="flex:1">
+        <span style="font-weight:600;font-size:11px;color:var(--cinza-texto);text-transform:uppercase">${t.empresa||''}</span>
+        <span style="color:var(--cinza-texto);font-size:11px;margin:0 6px">·</span>
+        <span>${t.ativ||''}</span>
+        ${t.desc?`<span style="color:var(--cinza-texto);font-size:11px"> — ${t.desc.slice(0,50)}${t.desc.length>50?'...':''}</span>`:''}
+      </span>
+      <span style="font-size:11px;color:var(--cinza-texto);flex-shrink:0">${t.dia||'—'}</span>
+    </label>`;
+  }).join('');
 
+  atualizarContadorMes();
   document.getElementById('modalMesOverlay').classList.add('open');
+}
+
+function atualizarContadorMes(){
+  const total=tarefas.length;
+  const sel=tarefas.filter((_,i)=>{const c=document.getElementById('chk_'+i);return c&&c.checked;}).length;
+  document.getElementById('contadorMes').textContent=`${sel} de ${total} tarefas selecionadas`;
+}
+
+function selecionarTodasMes(val){
+  tarefas.forEach((_,i)=>{const c=document.getElementById('chk_'+i);if(c)c.checked=val;});
+  atualizarContadorMes();
 }
 function fecharModalMes(){document.getElementById('modalMesOverlay').classList.remove('open');}
 
@@ -685,13 +719,17 @@ async function confirmarNovoMes(){
   const opcao=document.getElementById('opcaoMes').value;
   const nomeMes=MESES_PT[mes-1];
 
-  if(!confirm(`Replicar ${tarefas.length} tarefas para ${nomeMes}/${ano}?\n\nOpção: "${document.getElementById('opcaoMes').options[document.getElementById('opcaoMes').selectedIndex].text}"`))return;
+  // Pega apenas as tarefas selecionadas
+  const selecionadas=tarefas.filter((_,i)=>{const c=document.getElementById('chk_'+i);return c&&c.checked;});
+  if(!selecionadas.length){alert('Selecione pelo menos uma tarefa.');return;}
 
-  const novasTarefas=tarefas.map(t=>({
+  if(!confirm(`Replicar ${selecionadas.length} tarefa(s) para ${nomeMes}/${ano}?`))return;
+
+  const novasTarefas=selecionadas.map(t=>({
     ...t,
-    dia: shiftDiaParaMes(t.dia, mes, ano),
-    status: 'Pendente',
-    criadoPor: t.criadoPor||perfil,
+    dia:shiftDiaParaMes(t.dia,mes,ano),
+    status:'Pendente',
+    criadoPor:t.criadoPor||perfil,
   }));
 
   if(opcao==='substituir') tarefas=novasTarefas;
@@ -699,7 +737,7 @@ async function confirmarNovoMes(){
 
   fecharModalMes();
   await salvar();construirMultiselects();renderStats();renderTabela();
-  toast(`✓ ${novasTarefas.length} tarefas replicadas para ${nomeMes}/${ano}!`, 3500);
+  toast(`✓ ${novasTarefas.length} tarefas replicadas para ${nomeMes}/${ano}!`,3500);
 }
 
 function limparFiltros(){

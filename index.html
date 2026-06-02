@@ -96,7 +96,12 @@ th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;text-transfo
 td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--cinza);vertical-align:middle;line-height:1.4}
 tr:last-child td{border-bottom:none}
 tr.row-yan{background:#F3FDF7}tr.row-nath{background:#F5F3FF}tr.row-ambos{background:#F0FDFF}tr.row-outro{background:#FAFAFA}
-tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
+tr.data-row{transition:opacity 0.15s}
+tr.data-row:hover td{filter:brightness(0.97)}
+tr.data-row.dragging{opacity:0.4}
+tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
+.drag-handle{cursor:grab;color:var(--cinza-medio);font-size:16px;padding:0 4px;user-select:none}
+.drag-handle:hover{color:var(--cinza-texto)}
 .dia-row td{background:var(--preto);color:var(--verde);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.9px;padding:7px 14px;border-bottom:none}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .badge-yan{background:var(--verde-suave);color:var(--verde-escuro)}
@@ -124,13 +129,12 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
 .form-group input,.form-group select,.form-group textarea{padding:8px 11px;border:1.5px solid var(--cinza-medio);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--preto);background:var(--branco);outline:none;transition:border-color 0.15s;resize:vertical}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--roxo)}
 .modal-footer{padding:14px 26px 22px;display:flex;gap:10px;justify-content:flex-end}
-
-/* HISTÓRICO */
 .hist-entry{padding:12px 14px;border-radius:10px;border-left:3px solid var(--cinza-medio);background:var(--cinza);margin-bottom:8px}
 .hist-entry.criou{border-left-color:var(--verde)}
 .hist-entry.editou{border-left-color:var(--ciano)}
 .hist-entry.excluiu{border-left-color:var(--vermelho)}
 .hist-entry.passou{border-left-color:#f59e0b}
+.hist-entry.status{border-left-color:#a78bfa}
 .hist-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .hist-who{font-size:12px;font-weight:600;color:var(--preto)}
 .hist-when{font-size:11px;color:var(--cinza-texto)}
@@ -139,11 +143,7 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
 .hist-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .hist-filter-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--cinza-medio);background:var(--branco);font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
 .hist-filter-btn.active{background:var(--preto);color:var(--branco);border-color:var(--preto)}
-
-/* AMANHÃ */
 .amanha-preview{background:var(--cinza);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.6}
-.amanha-preview strong{color:var(--preto)}
-
 .empty{text-align:center;padding:50px 20px;color:var(--cinza-texto)}
 .empty-icon{font-size:36px;margin-bottom:10px}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--preto);color:var(--branco);padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;border:1px solid #333}
@@ -219,9 +219,9 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
     </div>
     <button class="btn btn-ghost" onclick="recarregarDados()" title="Atualizar">🔄</button>
     <button class="btn btn-hist" id="btnHistorico" onclick="abrirModalHistorico()" style="display:none">📜 Histórico</button>
-    <button class="btn btn-mes" id="btnNovoMes" onclick="abrirModalMes()" style="display:none">📅 Novo Mês</button>
+    <button class="btn btn-mes" onclick="abrirModalMes()">📅 Novo Mês</button>
     <button class="btn btn-ghost" onclick="exportarExcel()">⬇ Excel</button>
-    <button class="btn btn-primary" id="btnNovaTarefa" onclick="abrirModal()">+ Nova tarefa</button>
+    <button class="btn btn-primary" onclick="abrirModal()">+ Nova tarefa</button>
   </div>
 </header>
 
@@ -255,6 +255,7 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
     <div class="table-scroll">
       <table>
         <thead><tr>
+          <th style="width:30px"></th>
           <th style="width:110px">Empresa</th>
           <th style="width:90px">Dia</th>
           <th style="width:140px">Atividade</th>
@@ -313,10 +314,6 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
     </div>
     <div class="modal-body">
       <div class="amanha-preview" id="amanhaPreview"></div>
-      <div class="form-group">
-        <label>O que foi feito hoje? (opcional)</label>
-        <textarea id="fFeitoHoje" rows="3" placeholder="Descreva o que foi realizado parcialmente hoje..."></textarea>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="fecharModalAmanha()">Cancelar</button>
@@ -338,7 +335,8 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
         <button class="hist-filter-btn" onclick="filtrarHist('criou',this)">✅ Criações</button>
         <button class="hist-filter-btn" onclick="filtrarHist('editou',this)">✏️ Edições</button>
         <button class="hist-filter-btn" onclick="filtrarHist('excluiu',this)">🗑 Exclusões</button>
-        <button class="hist-filter-btn" onclick="filtrarHist('passou',this)">➡️ Passou p/ amanhã</button>
+        <button class="hist-filter-btn" onclick="filtrarHist('passou',this)">➡️ P/ amanhã</button>
+        <button class="hist-filter-btn" onclick="filtrarHist('status',this)">🔄 Status</button>
       </div>
       <div id="listaHistorico"></div>
     </div>
@@ -354,14 +352,8 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
     </div>
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:16px">
-        <div class="form-group">
-          <label>Mês de destino *</label>
-          <select id="mesDestino"></select>
-        </div>
-        <div class="form-group">
-          <label>Ano</label>
-          <select id="anoDestino"></select>
-        </div>
+        <div class="form-group"><label>Mês de destino *</label><select id="mesDestino"></select></div>
+        <div class="form-group"><label>Ano</label><select id="anoDestino"></select></div>
         <div class="form-group full">
           <label>O que fazer com as tarefas atuais?</label>
           <select id="opcaoMes">
@@ -394,9 +386,22 @@ tr.data-row:hover td{filter:brightness(0.97);cursor:pointer}
 /* ── CONFIG ─────────────────────────────── */
 const FB      = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/.json';
 const FB_HIST = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/historico.json';
-const PINS = { Nath:'', Yan:'1234', Matheus:'2345', Gabriela:'3456', Thiago:'4567', Gleyce:'5678', Pedro:'6789', Tatyanne:'0000', Tabita:'9999' };
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+/* ── PINS ───────────────────────────────── */
+const PINS = {
+  Nath:     '',      // sem PIN
+  Yan:      '2847',
+  Matheus:  '5193',
+  Gabriela: '7362',
+  Thiago:   '4519',
+  Gleyce:   '8274',
+  Pedro:    '3651',
+  Tatyanne: '9420',
+  Tabita:   '6138',
+};
+
 const PERFIL_INFO = {
   Nath:     {bg:'var(--roxo-suave)',fc:'var(--roxo-escuro)',i:'NA',nome:'Nathália'},
   Yan:      {bg:'var(--verde-suave)',fc:'var(--verde-escuro)',i:'YA',nome:'Yan'},
@@ -408,6 +413,7 @@ const PERFIL_INFO = {
   Tatyanne: {bg:'#FFF3CD',fc:'#856404',i:'TA',nome:'Tatyanne'},
   Tabita:   {bg:'#D6EAF8',fc:'#1A5276',i:'TB',nome:'Tábita'},
 };
+
 const RESP_OPTS = {
   Nath:     ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Yan/Nath'],
   Tatyanne: ['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Yan/Nath'],
@@ -419,16 +425,31 @@ const RESP_OPTS = {
   Yan:      ['Yan'],
   Pedro:    ['Pedro'],
 };
-const GESTORAS = ['Nath','Tatyanne','Tabita'];
+
+// Quais responsáveis cada perfil pode VER
+const PODE_VER = {
+  Nath:     null, // null = vê todos
+  Tatyanne: null,
+  Tabita:   null,
+  Matheus:  null,
+  Gabriela: null,
+  Thiago:   ['thiago','yan'],
+  Gleyce:   ['gleyce','pedro'],
+  Yan:      ['yan'],
+  Pedro:    ['pedro'],
+};
+
+const GESTORES = ['Nath','Tatyanne','Tabita'];
 
 let perfil=null, perfilSelecionado=null, tarefas=[], historico=[], editIndex=-1, amanhaIdx=-1, histFiltro='todos';
+let dragSrcIdx=null;
 const msState = { empresa:new Set(), resp:new Set(), status:new Set() };
 
 /* ── TOAST ──────────────────────────────── */
 let toastTimer;
 function toast(msg,dur=2500){
   const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
+  el.textContent=msg;el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
 }
@@ -443,53 +464,38 @@ async function fbLer(){
   const r=await fetch(FB+'?t='+Date.now());
   if(!r.ok) throw new Error('Erro '+r.status);
   const d=await r.json();
-  if(!d) return [];
-  if(Array.isArray(d)) return d.filter(Boolean);
-  if(typeof d==='object') return Object.values(d).filter(Boolean);
-  return [];
+  if(!d)return[];
+  if(Array.isArray(d))return d.filter(Boolean);
+  if(typeof d==='object')return Object.values(d).filter(Boolean);
+  return[];
 }
 async function fbSalvar(d){
   const r=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-  if(!r.ok) throw new Error('Erro ao salvar '+r.status);
+  if(!r.ok)throw new Error('Erro ao salvar '+r.status);
 }
 async function fbLerHist(){
   try{
     const r=await fetch(FB_HIST+'?t='+Date.now());
-    if(!r.ok) return [];
+    if(!r.ok)return[];
     const d=await r.json();
-    if(!d) return [];
-    if(Array.isArray(d)) return d.filter(Boolean);
-    if(typeof d==='object') return Object.values(d).filter(Boolean);
-    return [];
-  }catch{return [];}
+    if(!d)return[];
+    if(Array.isArray(d))return d.filter(Boolean);
+    if(typeof d==='object')return Object.values(d).filter(Boolean);
+    return[];
+  }catch{return[];}
 }
 async function fbSalvarHist(h){
-  try{
-    await fetch(FB_HIST,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(h)});
-  }catch{}
+  try{await fetch(FB_HIST,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(h)});}catch{}
 }
 
 /* ── HISTÓRICO ──────────────────────────── */
 function agora(){
   const d=new Date();
-  return {
-    data: d.toLocaleDateString('pt-BR'),
-    hora: d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
-    ts: d.getTime()
-  };
+  return{data:d.toLocaleDateString('pt-BR'),hora:d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),ts:d.getTime()};
 }
-async function registrarHist(acao, tarefa, extra=''){
-  const {data,hora,ts}=agora();
-  const entry={
-    acao, // 'criou','editou','excluiu','passou','status'
-    perfil,
-    empresa: tarefa.empresa||'',
-    ativ: tarefa.ativ||'',
-    resp: tarefa.resp||'',
-    extra,
-    data, hora, ts
-  };
-  historico=[entry,...historico].slice(0,200); // mantém últimas 200
+async function registrarHist(acao,tarefa,extra=''){
+  const{data,hora,ts}=agora();
+  historico=[{acao,perfil,empresa:tarefa.empresa||'',ativ:tarefa.ativ||'',resp:tarefa.resp||'',extra,data,hora,ts},...historico].slice(0,200);
   await fbSalvarHist(historico);
 }
 
@@ -516,40 +522,43 @@ async function entrar(){
   document.getElementById('loginScreen').style.display='none';
   const info=PERFIL_INFO[perfil];
   const av=document.getElementById('headerAvatar');
-  av.style.background=info.bg; av.style.color=info.fc; av.textContent=info.i;
+  av.style.background=info.bg;av.style.color=info.fc;av.textContent=info.i;
   document.getElementById('headerName').textContent=info.nome;
-  const isGestora=GESTORAS.includes(perfil);
-  document.getElementById('btnHistorico').style.display=isGestora?'inline-flex':'none';
-  document.getElementById('btnNovoMes').style.display=isGestora?'inline-flex':'none';
-  if(!podeVerTudo()) msState.resp.add(perfil);
+  document.getElementById('btnHistorico').style.display=GESTORES.includes(perfil)?'inline-flex':'none';
   await carregarDados();
 }
 function sair(){
   if(!confirm('Trocar de perfil?'))return;
-  perfil=null; perfilSelecionado=null;
+  perfil=null;perfilSelecionado=null;
   Object.keys(msState).forEach(k=>msState[k].clear());
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('pinInput').value='';
 }
 
 /* ── PERMISSÕES ─────────────────────────── */
+function podeVerTarefa(t){
+  const permitidos=PODE_VER[perfil];
+  if(permitidos===null)return true; // vê tudo
+  const rl=(t.resp||'').toLowerCase();
+  return permitidos.some(p=>rl.includes(p));
+}
 function podEditar(t){
   if(!t)return false;
+  if(!podeVerTarefa(t))return false;
   const r=(t.resp||'').toLowerCase();
   if(['Nath','Tatyanne','Tabita','Matheus','Gabriela'].includes(perfil))return true;
-  if(perfil==='Thiago') return r.includes('thiago')||r.includes('yan');
-  if(perfil==='Gleyce') return r.includes('gleyce')||r.includes('pedro');
-  if(perfil==='Yan') return r.includes('yan');
-  if(perfil==='Pedro') return r.includes('pedro');
+  if(perfil==='Thiago')return r.includes('thiago')||r.includes('yan');
+  if(perfil==='Gleyce')return r.includes('gleyce')||r.includes('pedro');
+  if(perfil==='Yan')return r.includes('yan');
+  if(perfil==='Pedro')return r.includes('pedro');
   return false;
 }
-function podeVerTudo(){return ['Nath','Tatyanne','Tabita','Matheus','Gabriela'].includes(perfil);}
 
 /* ── DADOS ──────────────────────────────── */
 async function carregarDados(){
   setSyncing();
   try{
-    [tarefas, historico]=await Promise.all([fbLer(), fbLerHist()]);
+    [tarefas,historico]=await Promise.all([fbLer(),fbLerHist()]);
     setSynced();
   }catch(e){setSyncError();toast('Erro ao carregar: '+e.message,4000);tarefas=[];historico=[];}
   construirMultiselects();renderStats();renderTabela();
@@ -557,7 +566,7 @@ async function carregarDados(){
 async function recarregarDados(){
   setSyncing();
   try{
-    [tarefas, historico]=await Promise.all([fbLer(), fbLerHist()]);
+    [tarefas,historico]=await Promise.all([fbLer(),fbLerHist()]);
     setSynced();toast('✓ Dados atualizados');
   }catch(e){setSyncError();toast('Erro ao atualizar');}
   construirMultiselects();renderStats();renderTabela();
@@ -605,14 +614,22 @@ function shiftDiaParaMes(dia,novoMes,novoAno){
   const diff=(diaSemana-primeiroDia.getDay()+7)%7;
   let targetDay=1+diff+(ocorrencia-1)*7;
   const diasNoMes=new Date(novoAno,novoMes,0).getDate();
-  if(targetDay>diasNoMes) targetDay-=7;
+  if(targetDay>diasNoMes)targetDay-=7;
   return calToDia(`${novoAno}-${String(novoMes).padStart(2,'0')}-${String(targetDay).padStart(2,'0')}`);
 }
 
 /* ── MULTISELECT ────────────────────────── */
 function getOpcoes(key){
-  if(key==='empresa')return[...new Set(tarefas.map(t=>t.empresa).filter(Boolean))].sort();
-  if(key==='resp')return['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Yan/Nath'];
+  if(key==='empresa'){
+    const visiveis=tarefas.filter(t=>podeVerTarefa(t));
+    return[...new Set(visiveis.map(t=>t.empresa).filter(Boolean))].sort();
+  }
+  if(key==='resp'){
+    const permitidos=PODE_VER[perfil];
+    const todos=['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Yan/Nath'];
+    if(permitidos===null)return todos;
+    return todos.filter(o=>permitidos.some(p=>o.toLowerCase().includes(p)));
+  }
   if(key==='status')return['Pendente','Em andamento','Concluído'];
   return[];
 }
@@ -650,19 +667,22 @@ function filtrar(){
   const de=document.getElementById('filtDataDe').value,ate=document.getElementById('filtDataAte').value;
   const deD=de?new Date(de+'T00:00:00'):null,ateD=ate?new Date(ate+'T23:59:59'):null;
   return tarefas.filter(t=>{
+    if(!podeVerTarefa(t))return false; // FILTRO DE VISIBILIDADE POR PERFIL
     if(busca&&![(t.ativ||''),(t.desc||''),(t.empresa||'')].some(v=>v.toLowerCase().includes(busca)))return false;
     if(msState.empresa.size>0&&!msState.empresa.has(t.empresa))return false;
     if(msState.resp.size>0){const rl=(t.resp||'').toLowerCase();if(![...msState.resp].some(r=>rl.includes(r.toLowerCase())))return false;}
     if(msState.status.size>0&&!msState.status.has(t.status))return false;
     if(deD||ateD){const dt=diaToDate(t.dia);if(!dt)return false;if(deD&&dt<deD)return false;if(ateD&&dt>ateD)return false;}
     return true;
-  }).sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
+  });
+  // sem sort — ordem é mantida pelo drag or original
 }
 
 /* ── RENDER ─────────────────────────────── */
 function renderStats(){
-  const tot=tarefas.length,con=tarefas.filter(t=>t.status==='Concluído').length,
-        pen=tarefas.filter(t=>t.status==='Pendente').length,and=tarefas.filter(t=>t.status==='Em andamento').length,
+  const visiveis=tarefas.filter(t=>podeVerTarefa(t));
+  const tot=visiveis.length,con=visiveis.filter(t=>t.status==='Concluído').length,
+        pen=visiveis.filter(t=>t.status==='Pendente').length,and=visiveis.filter(t=>t.status==='Em andamento').length,
         pct=tot?Math.round(con/tot*100):0;
   document.getElementById('stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${tot}</div></div>
@@ -682,22 +702,34 @@ function rowClass(t){
   const rl=(t.resp||'').toLowerCase();
   return rl.includes('nath')&&rl.includes('yan')?'row-ambos':rl.includes('nath')?'row-nath':rl.includes('yan')?'row-yan':'row-outro';
 }
+
 function renderTabela(){
   const lista=filtrar();
   document.getElementById('contagem').textContent=lista.length+' tarefa'+(lista.length!==1?'s':'');
   const tbody=document.getElementById('tbody');
-  if(!lista.length){tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-icon">📋</div><div>Nenhuma tarefa encontrada</div></div></td></tr>`;return;}
+  if(!lista.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">📋</div><div>Nenhuma tarefa encontrada</div></div></td></tr>`;return;}
   let html='',prevDia=null;
   lista.forEach(t=>{
     const idx=tarefas.indexOf(t);
-    if(t.dia!==prevDia){html+=`<tr class="dia-row"><td colspan="9">${(!t.dia||t.dia==='—')?'Sem data definida':t.dia}</td></tr>`;prevDia=t.dia;}
+    if(t.dia!==prevDia){
+      html+=`<tr class="dia-row"><td colspan="10">${(!t.dia||t.dia==='—')?'Sem data definida':t.dia}</td></tr>`;
+      prevDia=t.dia;
+    }
     const sc=t.status==='Concluído'?'#00BF63':t.status==='Em andamento'?'#0088AA':'#FF3131';
     const podeE=podEditar(t);
-    const statusCell=podeE?`<select style="border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:${sc};padding:2px 0;max-width:120px" onchange="mudarStatus(${idx},this.value)"><option ${t.status==='Pendente'?'selected':''}>Pendente</option><option ${t.status==='Em andamento'?'selected':''}>Em andamento</option><option ${t.status==='Concluído'?'selected':''}>Concluído</option></select>`:`<span style="font-size:11px;font-weight:700;color:${sc}">${t.status}</span>`;
-    // Botão passar para amanhã — só para tarefas não concluídas
+    const statusCell=podeE
+      ?`<select style="border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:${sc};padding:2px 0;max-width:120px" onchange="mudarStatus(${idx},this.value)"><option ${t.status==='Pendente'?'selected':''}>Pendente</option><option ${t.status==='Em andamento'?'selected':''}>Em andamento</option><option ${t.status==='Concluído'?'selected':''}>Concluído</option></select>`
+      :`<span style="font-size:11px;font-weight:700;color:${sc}">${t.status}</span>`;
     const btnAmanha=podeE&&t.status!=='Concluído'?`<button class="action-btn" onclick="abrirModalAmanha(${idx})" title="Passar para amanhã">➡️</button>`:'';
     const editBtn=podeE?`<button class="action-btn" onclick="editarTarefa(${idx})" title="Editar">✏️</button>`:`<span class="readonly-badge">👁</span>`;
-    html+=`<tr class="data-row ${rowClass(t)}" ondblclick="${podeE?`editarTarefa(${idx})`:''}">
+    const handle=podeE?`<td><span class="drag-handle" draggable="true" onmousedown="dragSrcIdx=${idx}" title="Arrastar para reordenar">⠿</span></td>`:`<td></td>`;
+    html+=`<tr class="data-row ${rowClass(t)}" data-idx="${idx}"
+      ondragstart="onDragStart(event,${idx})"
+      ondragover="onDragOver(event)"
+      ondrop="onDrop(event,${idx})"
+      ondragend="onDragEnd(event)"
+      ondblclick="${podeE?`editarTarefa(${idx})`:''}"
+    >${handle}
       <td><span class="empresa-tag">${t.empresa||''}</span></td>
       <td style="color:var(--cinza-texto);font-size:12px">${t.dia||'—'}</td>
       <td style="font-weight:500">${t.ativ||''}</td>
@@ -711,13 +743,45 @@ function renderTabela(){
   });
   tbody.innerHTML=html;
 }
+
 async function mudarStatus(idx,v){
   if(!podEditar(tarefas[idx]))return;
   const ant=tarefas[idx].status;
   tarefas[idx].status=v;
   await salvar();
-  await registrarHist('status',tarefas[idx],`Status: "${ant}" → "${v}"`);
+  await registrarHist('status',tarefas[idx],`"${ant}" → "${v}"`);
   renderStats();renderTabela();toast('✓ Status atualizado');
+}
+
+/* ── DRAG & DROP ────────────────────────── */
+function onDragStart(e,idx){
+  dragSrcIdx=idx;
+  e.dataTransfer.effectAllowed='move';
+  e.currentTarget.classList.add('dragging');
+}
+function onDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+async function onDrop(e,targetIdx){
+  e.preventDefault();
+  if(dragSrcIdx===null||dragSrcIdx===targetIdx)return;
+  // Reordena tarefas
+  const item=tarefas.splice(dragSrcIdx,1)[0];
+  const newTarget=dragSrcIdx<targetIdx?targetIdx-1:targetIdx;
+  tarefas.splice(newTarget,0,item);
+  dragSrcIdx=null;
+  document.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+  await salvar();
+  renderTabela();
+  toast('✓ Ordem atualizada');
+}
+function onDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(r=>r.classList.remove('drag-over'));
+  dragSrcIdx=null;
 }
 
 /* ── MODAL TAREFA ───────────────────────── */
@@ -751,8 +815,7 @@ async function salvarTarefa(){
   const ativ=document.getElementById('fAtiv').value.trim();
   if(!empresa||!ativ){alert('Preencha: Empresa e Atividade.');return;}
   const isNova=editIndex===-1;
-  const nova={
-    empresa,ativ,
+  const nova={empresa,ativ,
     dia:calToDia(document.getElementById('fDataCal').value),
     desc:document.getElementById('fDesc').value.trim(),
     tempo:document.getElementById('fTempo').value.trim(),
@@ -764,7 +827,7 @@ async function salvarTarefa(){
   if(isNova)tarefas.push(nova);else tarefas[editIndex]=nova;
   fecharModal();
   await salvar();
-  await registrarHist(isNova?'criou':'editou',nova, isNova?'':`Editado por ${perfil}`);
+  await registrarHist(isNova?'criou':'editou',nova);
   construirMultiselects();renderStats();renderTabela();toast('✓ Tarefa salva');
 }
 async function excluirTarefa(){
@@ -775,7 +838,7 @@ async function excluirTarefa(){
   tarefas.splice(editIndex,1);
   fecharModal();
   await salvar();
-  await registrarHist('excluiu',t,`Excluído por ${perfil}`);
+  await registrarHist('excluiu',t);
   construirMultiselects();renderStats();renderTabela();toast('🗑 Tarefa excluída');
 }
 
@@ -786,47 +849,29 @@ function abrirModalAmanha(idx){
   const proxDia=proximoDia(t.dia);
   document.getElementById('amanhaPreview').innerHTML=`
     <strong>${t.empresa}</strong> — ${t.ativ}<br>
-    <span style="color:var(--cinza-texto)">Data atual: <strong>${t.dia||'—'}</strong> → Nova data: <strong>${proxDia}</strong></span><br>
-    <span style="color:var(--cinza-texto);font-size:12px">A tarefa atual ficará como <strong>"Em andamento"</strong> e uma cópia será criada para ${proxDia} como <strong>"Pendente"</strong>.</span>`;
-  document.getElementById('fFeitoHoje').value='';
+    <span style="color:var(--cinza-texto)">Data atual: <strong>${t.dia||'—'}</strong> → Nova data: <strong>${proxDia}</strong></span><br><br>
+    <span style="color:var(--cinza-texto);font-size:12px">
+      • A tarefa atual ficará como <strong>"Em andamento"</strong><br>
+      • Uma cópia será criada para <strong>${proxDia}</strong> como <strong>"Pendente"</strong>
+    </span>`;
   document.getElementById('modalAmanhaOverlay').classList.add('open');
 }
 function fecharModalAmanha(){document.getElementById('modalAmanhaOverlay').classList.remove('open');amanhaIdx=-1;}
 async function confirmarPassarAmanha(){
   if(amanhaIdx===-1)return;
   const t=tarefas[amanhaIdx];
-  const feitoHoje=document.getElementById('fFeitoHoje').value.trim();
   const proxDia=proximoDia(t.dia);
-
-  // Atualiza a tarefa original
-  tarefas[amanhaIdx]={
-    ...t,
-    status:'Em andamento',
-    obs: feitoHoje ? (t.obs?t.obs+' | ':'')+'Parcial '+t.dia+': '+feitoHoje : t.obs,
-  };
-
-  // Cria cópia para o próximo dia
-  const copia={
-    ...t,
-    dia: proxDia,
-    status:'Pendente',
-    obs: t.obs||'',
-    criadoPor: perfil,
-  };
-  tarefas.push(copia);
-
+  tarefas[amanhaIdx]={...t,status:'Em andamento'};
+  tarefas.push({...t,dia:proxDia,status:'Pendente',criadoPor:perfil});
   fecharModalAmanha();
   await salvar();
-  await registrarHist('passou',t,`Passou de ${t.dia} para ${proxDia}${feitoHoje?' | Feito hoje: '+feitoHoje:''}`);
+  await registrarHist('passou',t,`De ${t.dia} para ${proxDia}`);
   construirMultiselects();renderStats();renderTabela();
   toast('➡️ Tarefa passada para '+proxDia,3000);
 }
 
 /* ── MODAL HISTÓRICO ────────────────────── */
-function abrirModalHistorico(){
-  renderHistorico();
-  document.getElementById('modalHistOverlay').classList.add('open');
-}
+function abrirModalHistorico(){renderHistorico();document.getElementById('modalHistOverlay').classList.add('open');}
 function fecharModalHistorico(){document.getElementById('modalHistOverlay').classList.remove('open');}
 function filtrarHist(tipo,el){
   histFiltro=tipo;
@@ -839,11 +884,11 @@ function renderHistorico(){
   const el=document.getElementById('listaHistorico');
   if(!lista.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📜</div><div>Nenhum registro encontrado</div></div>`;return;}
   const icons={criou:'✅',editou:'✏️',excluiu:'🗑️',passou:'➡️',status:'🔄'};
-  const labels={criou:'Criou',editou:'Editou',excluiu:'Excluiu',passou:'Passou p/ amanhã',status:'Alterou status'};
+  const labels={criou:'criou tarefa',editou:'editou tarefa',excluiu:'excluiu tarefa',passou:'passou p/ amanhã',status:'alterou status'};
   el.innerHTML=lista.slice(0,100).map(h=>`
     <div class="hist-entry ${h.acao}">
       <div class="hist-meta">
-        <span class="hist-who">${icons[h.acao]||'•'} ${h.perfil} <span style="font-weight:400;color:var(--cinza-texto)">${labels[h.acao]||h.acao}</span></span>
+        <span class="hist-who">${icons[h.acao]||'•'} <strong>${h.perfil}</strong> ${labels[h.acao]||h.acao}</span>
         <span class="hist-when">${h.data} às ${h.hora}</span>
       </div>
       <div class="hist-desc"><strong>${h.empresa}</strong> — ${h.ativ} <span style="color:var(--cinza-texto);font-size:11px">(${h.resp})</span></div>
@@ -853,16 +898,14 @@ function renderHistorico(){
 
 /* ── MODAL NOVO MÊS ─────────────────────── */
 function abrirModalMes(){
-  const mesSelect=document.getElementById('mesDestino');
-  const anoSelect=document.getElementById('anoDestino');
   const agora=new Date();
   const proximoMes=(agora.getMonth()+2)>12?1:(agora.getMonth()+2);
   const anoAtual=agora.getFullYear();
-  mesSelect.innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proximoMes?'selected':''}>${m}</option>`).join('');
-  anoSelect.innerHTML=[anoAtual,anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
-  const lista=document.getElementById('listaTarefasMes');
-  const sorted=[...tarefas].sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
-  lista.innerHTML=sorted.map(t=>{
+  document.getElementById('mesDestino').innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proximoMes?'selected':''}>${m}</option>`).join('');
+  document.getElementById('anoDestino').innerHTML=[anoAtual,anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
+  // Mostra apenas tarefas visíveis para o perfil
+  const visiveis=tarefas.filter(t=>podeVerTarefa(t));
+  document.getElementById('listaTarefasMes').innerHTML=visiveis.map(t=>{
     const idx=tarefas.indexOf(t);
     return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">
       <input type="checkbox" id="chk_${idx}" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--verde)" onchange="atualizarContadorMes()">
@@ -870,7 +913,6 @@ function abrirModalMes(){
         <span style="font-weight:600;font-size:11px;color:var(--cinza-texto);text-transform:uppercase">${t.empresa||''}</span>
         <span style="color:var(--cinza-texto);font-size:11px;margin:0 5px">·</span>
         <span>${t.ativ||''}</span>
-        ${t.desc?`<span style="color:var(--cinza-texto);font-size:11px"> — ${t.desc.slice(0,50)}${t.desc.length>50?'...':''}</span>`:''}
       </span>
       <span style="font-size:11px;color:var(--cinza-texto);flex-shrink:0">${t.dia||'—'}</span>
     </label>`;
@@ -880,12 +922,12 @@ function abrirModalMes(){
 }
 function fecharModalMes(){document.getElementById('modalMesOverlay').classList.remove('open');}
 function atualizarContadorMes(){
-  const total=tarefas.length;
-  const sel=tarefas.filter((_,i)=>{const c=document.getElementById('chk_'+i);return c&&c.checked;}).length;
-  document.getElementById('contadorMes').textContent=`${sel} de ${total} selecionadas`;
+  const visiveis=tarefas.filter(t=>podeVerTarefa(t));
+  const sel=visiveis.filter(t=>{const c=document.getElementById('chk_'+tarefas.indexOf(t));return c&&c.checked;}).length;
+  document.getElementById('contadorMes').textContent=`${sel} de ${visiveis.length} selecionadas`;
 }
 function selecionarTodasMes(val){
-  tarefas.forEach((_,i)=>{const c=document.getElementById('chk_'+i);if(c)c.checked=val;});
+  tarefas.filter(t=>podeVerTarefa(t)).forEach(t=>{const c=document.getElementById('chk_'+tarefas.indexOf(t));if(c)c.checked=val;});
   atualizarContadorMes();
 }
 async function confirmarNovoMes(){
@@ -893,17 +935,21 @@ async function confirmarNovoMes(){
   const ano=parseInt(document.getElementById('anoDestino').value);
   const opcao=document.getElementById('opcaoMes').value;
   const nomeMes=MESES_PT[mes-1];
-  const selecionadas=tarefas.filter((_,i)=>{const c=document.getElementById('chk_'+i);return c&&c.checked;});
+  const selecionadas=tarefas.filter(t=>{
+    if(!podeVerTarefa(t))return false;
+    const c=document.getElementById('chk_'+tarefas.indexOf(t));
+    return c&&c.checked;
+  });
   if(!selecionadas.length){alert('Selecione pelo menos uma tarefa.');return;}
   if(!confirm(`Replicar ${selecionadas.length} tarefa(s) para ${nomeMes}/${ano}?`))return;
-  const novasTarefas=selecionadas.map(t=>({...t,dia:shiftDiaParaMes(t.dia,mes,ano),status:'Pendente',criadoPor:t.criadoPor||perfil}));
-  if(opcao==='substituir') tarefas=novasTarefas;
-  else tarefas=[...tarefas,...novasTarefas];
+  const novas=selecionadas.map(t=>({...t,dia:shiftDiaParaMes(t.dia,mes,ano),status:'Pendente',criadoPor:t.criadoPor||perfil}));
+  if(opcao==='substituir')tarefas=novas;
+  else tarefas=[...tarefas,...novas];
   fecharModalMes();
   await salvar();
-  await registrarHist('editou',{empresa:'Planejamento',ativ:'Novo mês',resp:perfil},`${novasTarefas.length} tarefas replicadas para ${nomeMes}/${ano} por ${perfil}`);
+  await registrarHist('editou',{empresa:'Planejamento',ativ:'Novo mês',resp:perfil},`${novas.length} tarefas → ${nomeMes}/${ano}`);
   construirMultiselects();renderStats();renderTabela();
-  toast(`✓ ${novasTarefas.length} tarefas replicadas para ${nomeMes}/${ano}!`,3500);
+  toast(`✓ ${novas.length} tarefas replicadas para ${nomeMes}/${ano}!`,3500);
 }
 
 function limparFiltros(){
@@ -911,18 +957,17 @@ function limparFiltros(){
   document.getElementById('filtDataDe').value='';
   document.getElementById('filtDataAte').value='';
   Object.keys(msState).forEach(k=>msState[k].clear());
-  if(!podeVerTudo())msState.resp.add(perfil);
   construirMultiselects();renderTabela();
 }
 
 /* ── EXPORT ─────────────────────────────── */
 function exportarExcel(){
   const wb=XLSX.utils.book_new();
-  const s=tarefas.slice().sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
+  const visiveis=tarefas.filter(t=>podeVerTarefa(t));
   const ts=l=>{const r=[['Empresa','Dia','Atividade','Descrição','Tempo','Responsável','Criado por','Status','Observações']];l.forEach(t=>r.push([t.empresa,t.dia,t.ativ,t.desc,t.tempo,t.resp,t.criadoPor||'',t.status,t.obs]));return XLSX.utils.aoa_to_sheet(r);};
-  XLSX.utils.book_append_sheet(wb,ts(s),'Geral');
-  XLSX.utils.book_append_sheet(wb,ts(s.filter(t=>(t.resp||'').toLowerCase().includes('nath'))),'Nathália');
-  XLSX.utils.book_append_sheet(wb,ts(s.filter(t=>(t.resp||'').toLowerCase().includes('yan'))),'Yan');
+  XLSX.utils.book_append_sheet(wb,ts(visiveis),'Geral');
+  XLSX.utils.book_append_sheet(wb,ts(visiveis.filter(t=>(t.resp||'').toLowerCase().includes('nath'))),'Nathália');
+  XLSX.utils.book_append_sheet(wb,ts(visiveis.filter(t=>(t.resp||'').toLowerCase().includes('yan'))),'Yan');
   XLSX.writeFile(wb,'Planning_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 

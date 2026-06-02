@@ -217,6 +217,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
       <span class="user-pill-name" id="headerName"></span>
       <span style="font-size:11px;color:#666;margin-left:2px">↩</span>
     </div>
+    <button class="btn btn-ghost" onclick="abrirModalPin()" title="Alterar PIN">🔑</button>
     <button class="btn btn-ghost" onclick="recarregarDados()" title="Atualizar">🔄</button>
     <button class="btn btn-hist" id="btnHistorico" onclick="abrirModalHistorico()" style="display:none">📜 Histórico</button>
     <button class="btn btn-mes" onclick="abrirModalMes()">📅 Novo Mês</button>
@@ -305,6 +306,38 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
   </div>
 </div>
 
+<!-- MODAL ALTERAR PIN -->
+<div class="modal-overlay" id="modalPinOverlay" onclick="fecharModalPin()">
+  <div class="modal" style="width:400px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">🔑 Alterar PIN</span>
+      <button class="modal-close" onclick="fecharModalPin()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--cinza-texto);margin-bottom:20px">Altere seu PIN de acesso. Mínimo 4 dígitos.</p>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>PIN atual</label>
+          <input type="password" id="pinAtual" maxlength="6" placeholder="••••" style="letter-spacing:6px;text-align:center">
+        </div>
+        <div class="form-group full">
+          <label>Novo PIN</label>
+          <input type="password" id="pinNovo" maxlength="6" placeholder="••••" style="letter-spacing:6px;text-align:center">
+        </div>
+        <div class="form-group full">
+          <label>Confirmar novo PIN</label>
+          <input type="password" id="pinConfirm" maxlength="6" placeholder="••••" style="letter-spacing:6px;text-align:center">
+        </div>
+      </div>
+      <p id="pinErro" style="color:var(--vermelho);font-size:12px;margin-top:10px;min-height:18px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModalPin()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPin()">Salvar PIN</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PASSAR PARA AMANHÃ -->
 <div class="modal-overlay" id="modalAmanhaOverlay" onclick="fecharModalAmanha()">
   <div class="modal" onclick="event.stopPropagation()">
@@ -386,21 +419,14 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
 /* ── CONFIG ─────────────────────────────── */
 const FB      = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/.json';
 const FB_HIST = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/historico.json';
-const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const FB_PINS = 'https://planejamento-mensal-planning-default-rtdb.firebaseio.com/pins.json';
 
-/* ── PINS ───────────────────────────────── */
-const PINS = {
-  Nath:     '',      // sem PIN
-  Yan:      '2847',
-  Matheus:  '5193',
-  Gabriela: '7362',
-  Thiago:   '4519',
-  Gleyce:   '8274',
-  Pedro:    '3651',
-  Tatyanne: '9420',
-  Tabita:   '6138',
+// PINs padrão (usados se não houver nada no Firebase)
+const PINS_DEFAULT = {
+  Nath:'3012', Yan:'2847', Matheus:'5193', Gabriela:'7362',
+  Thiago:'4519', Gleyce:'8274', Pedro:'3651', Tatyanne:'9420', Tabita:'6138'
 };
+let PINS = {...PINS_DEFAULT};
 
 const PERFIL_INFO = {
   Nath:     {bg:'var(--roxo-suave)',fc:'var(--roxo-escuro)',i:'NA',nome:'Nathália'},
@@ -488,7 +514,43 @@ async function fbSalvarHist(h){
   try{await fetch(FB_HIST,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(h)});}catch{}
 }
 
-/* ── HISTÓRICO ──────────────────────────── */
+/* ── PINS FIREBASE ──────────────────────── */
+async function fbLerPins(){
+  try{
+    const r=await fetch(FB_PINS+'?t='+Date.now());
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d&&typeof d==='object') PINS={...PINS_DEFAULT,...d};
+  }catch{}
+}
+async function fbSalvarPins(){
+  try{await fetch(FB_PINS,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(PINS)});}catch{}
+}
+
+function abrirModalPin(){
+  document.getElementById('pinAtual').value='';
+  document.getElementById('pinNovo').value='';
+  document.getElementById('pinConfirm').value='';
+  document.getElementById('pinErro').textContent='';
+  document.getElementById('modalPinOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('pinAtual').focus(),50);
+}
+function fecharModalPin(){document.getElementById('modalPinOverlay').classList.remove('open');}
+async function salvarPin(){
+  const atual=document.getElementById('pinAtual').value;
+  const novo=document.getElementById('pinNovo').value;
+  const confirm=document.getElementById('pinConfirm').value;
+  const erroEl=document.getElementById('pinErro');
+  if(atual!==PINS[perfil]){erroEl.textContent='PIN atual incorreto.';return;}
+  if(novo.length<4){erroEl.textContent='O novo PIN deve ter pelo menos 4 dígitos.';return;}
+  if(novo!==confirm){erroEl.textContent='Os PINs não coincidem.';return;}
+  PINS[perfil]=novo;
+  await fbSalvarPins();
+  fecharModalPin();
+  toast('✓ PIN alterado com sucesso!');
+}
+
+
 function agora(){
   const d=new Date();
   return{data:d.toLocaleDateString('pt-BR'),hora:d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),ts:d.getTime()};
@@ -559,6 +621,7 @@ async function carregarDados(){
   setSyncing();
   try{
     [tarefas,historico]=await Promise.all([fbLer(),fbLerHist()]);
+    await fbLerPins();
     setSynced();
   }catch(e){setSyncError();toast('Erro ao carregar: '+e.message,4000);tarefas=[];historico=[];}
   construirMultiselects();renderStats();renderTabela();
@@ -971,7 +1034,7 @@ function exportarExcel(){
   XLSX.writeFile(wb,'Planning_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalAmanha();fecharModalHistorico();fecharModalMes();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalAmanha();fecharModalHistorico();fecharModalMes();fecharModalPin();}});
 document.getElementById('loginScreen').style.display='flex';
 </script>
 </body>

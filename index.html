@@ -737,7 +737,7 @@ function filtrar(){
     if(msState.status.size>0&&!msState.status.has(t.status))return false;
     if(deD||ateD){const dt=diaToDate(t.dia);if(!dt)return false;if(deD&&dt<deD)return false;if(ateD&&dt>ateD)return false;}
     return true;
-  });
+  }).sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia)||a.empresa.localeCompare(b.empresa));
   // sem sort — ordem é mantida pelo drag or original
 }
 

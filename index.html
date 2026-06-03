@@ -289,7 +289,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
         <div class="form-group full"><label>Descrição</label><textarea id="fDesc" rows="2" placeholder="Descreva a tarefa..."></textarea></div>
         <div class="form-group"><label>Responsável *</label><select id="fResp"></select></div>
         <div class="form-group"><label>Status</label>
-          <select id="fStatus"><option>Pendente</option><option>Em andamento</option><option>Concluído</option></select>
+          <select id="fStatus">          <option>Pendente</option><option>Em andamento</option><option>Aguardando Retorno</option><option>Concluído</option></select>
         </div>
         <div class="form-group full"><label>Observações</label><textarea id="fObs" rows="2" placeholder="Notas adicionais..."></textarea></div>
       </div>
@@ -644,7 +644,7 @@ function getOpcoes(key){
     if(perm===null) return todos;
     return todos.filter(o=>perm.some(p=>o.toLowerCase().includes(p)));
   }
-  if(key==='status') return['Pendente','Em andamento','Concluído'];
+  if(key==='status') return['Pendente','Em andamento','Aguardando Retorno','Concluído'];
   return[];
 }
 function construirMultiselects(){['empresa','resp','status'].forEach(k=>criarMS(k));}
@@ -709,12 +709,15 @@ function filtrar(){
 function renderStats(){
   const vis=tarefas.filter(t=>podeVerTarefa(t));
   const tot=vis.length,con=vis.filter(t=>t.status==='Concluído').length,
-        pen=vis.filter(t=>t.status==='Pendente').length,and=vis.filter(t=>t.status==='Em andamento').length,
+        pen=vis.filter(t=>t.status==='Pendente').length,
+        and=vis.filter(t=>t.status==='Em andamento').length,
+        agu=vis.filter(t=>t.status==='Aguardando Retorno').length,
         pct=tot?Math.round(con/tot*100):0;
   document.getElementById('stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${tot}</div></div>
     <div class="stat-card"><div class="stat-label">Concluído</div><div class="stat-value" style="color:var(--verde-escuro)">${con}</div></div>
     <div class="stat-card"><div class="stat-label">Em andamento</div><div class="stat-value" style="color:#0088AA">${and}</div></div>
+    <div class="stat-card"><div class="stat-label">Ag. Retorno</div><div class="stat-value" style="color:#f59e0b">${agu}</div></div>
     <div class="stat-card"><div class="stat-label">Pendente</div><div class="stat-value" style="color:var(--vermelho)">${pen}</div></div>
     <div class="stat-card"><div class="stat-label">Progresso</div><div class="stat-value" style="color:var(--verde-escuro)">${pct}%</div></div>`;
 }
@@ -744,12 +747,13 @@ function renderTabela(){
       html+=`<tr class="dia-row"><td colspan="10">${(!t.dia||t.dia==='—')?'Sem data definida':t.dia}</td></tr>`;
       prevDia=t.dia;
     }
-    const sc=t.status==='Concluído'?'#00BF63':t.status==='Em andamento'?'#0088AA':'#FF3131';
+    const sc=t.status==='Concluído'?'#00BF63':t.status==='Em andamento'?'#0088AA':t.status==='Aguardando Retorno'?'#f59e0b':'#FF3131';
     const podeE=podEditar(t);
     const statusCell=podeE
       ?`<select style="border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;color:${sc};padding:2px 0;max-width:120px" onchange="mudarStatus(${i},this.value)">
           <option ${t.status==='Pendente'?'selected':''}>Pendente</option>
           <option ${t.status==='Em andamento'?'selected':''}>Em andamento</option>
+          <option ${t.status==='Aguardando Retorno'?'selected':''}>Aguardando Retorno</option>
           <option ${t.status==='Concluído'?'selected':''}>Concluído</option>
         </select>`
       :`<span style="font-size:11px;font-weight:700;color:${sc}">${t.status}</span>`;
@@ -914,7 +918,7 @@ async function confirmarPassarAmanha(){
   if(amanhaIdx===-1) return;
   const t={...tarefas[amanhaIdx]};
   const proxDia=proximoDia(t.dia);
-  tarefas[amanhaIdx]={...t,status:'Em andamento'};
+  tarefas[amanhaIdx]={...t,status:'Concluído'};
   tarefas.push({...t,dia:proxDia,status:'Pendente',criadoPor:perfil});
   fecharModalAmanha();
   await salvar();

@@ -702,7 +702,7 @@ function filtrar(){
       }
       return true;
     })
-    .sort((a,b)=>diaOrdem(a.t.dia)-diaOrdem(b.t.dia)||a.t.empresa.localeCompare(b.t.empresa));
+    .sort((a,b)=>diaOrdem(a.t.dia)-diaOrdem(b.t.dia)||((a.t.empresa||'').localeCompare(b.t.empresa||'')));
 }
 
 /* ── RENDER ─────────────────────────────── */

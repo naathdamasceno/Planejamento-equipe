@@ -660,11 +660,11 @@ function filtrar(){
       if(deD||ateD){const dt=diaToDate(t.dia);if(!dt)return false;if(deD&&dt<deD)return false;if(ateD&&dt>ateD)return false;}
       return true;
     })
-    // Ordena por data, depois por _ord (ordem manual do drag)
+    // Ordena por data; dentro do mesmo dia preserva a ordem do array (drag)
     .sort((a,b)=>{
       const da=diaOrdem(a.t.dia),db=diaOrdem(b.t.dia);
       if(da!==db)return da-db;
-      return (a.t._ord||0)-(b.t._ord||0);
+      return a.i-b.i;
     });
 }
 

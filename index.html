@@ -229,11 +229,15 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
   <div class="table-wrap">
     <div class="table-header">
       <span class="table-title">Tarefas</span>
-      <span class="table-count" id="contagem">0 tarefas</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="btnLote" onclick="abrirModalLote()" style="display:none;padding:6px 14px;border-radius:8px;background:var(--ciano-suave);color:#006080;border:1px solid var(--ciano);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📅 Alterar data (<span id="loteCount">0</span>)</button>
+        <span class="table-count" id="contagem">0 tarefas</span>
+      </div>
     </div>
     <div class="table-scroll">
       <table>
         <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="chkTodos" onchange="selecionarTodosTabela(this.checked)" style="cursor:pointer;accent-color:var(--verde)"></th>
           <th style="width:24px"></th>
           <th style="width:110px">Empresa</th><th style="width:90px">Dia</th>
           <th style="width:140px">Atividade</th><th>Descrição</th>
@@ -291,6 +295,27 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
       <button class="btn btn-danger" id="btnExcluir" onclick="excluirTarefa()" style="margin-right:auto;display:none">🗑 Excluir</button>
       <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarTarefa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALTERAR DATA EM LOTE -->
+<div class="modal-overlay" id="modalLoteOverlay" onclick="fecharModalLote()">
+  <div class="modal" style="width:400px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">📅 Alterar Data em Lote</span>
+      <button class="modal-close" onclick="fecharModalLote()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="loteInfo" style="font-size:13px;color:var(--cinza-texto);margin-bottom:16px"></div>
+      <div class="form-group">
+        <label>Nova data</label>
+        <input type="date" id="loteData">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModalLote()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarLote()">Alterar data</button>
     </div>
   </div>
 </div>
@@ -738,7 +763,7 @@ function renderTabela(){
       ondrop="onDrop(event,${i})"
       ondragend="onDragEnd(event)"
       ondblclick="${podeE?`editarTarefa(${i})`:''}"
-    >${handle}
+    ><td><input type="checkbox" class="chk-tarefa" data-idx="${i}" onchange="atualizarSelecao()" style="cursor:pointer;accent-color:var(--verde)"></td>${handle}
       <td><span class="empresa-tag">${t.empresa||''}</span></td>
       <td style="color:var(--cinza-texto);font-size:12px">${t.dia||'—'}</td>
       <td style="font-weight:500">${t.ativ||''}</td>
@@ -983,7 +1008,48 @@ async function confirmarNovoMes(){
   toast(`✓ ${novas.length} tarefas replicadas para ${nomeMes}/${ano}!`,3500);
 }
 
-/* ── LIMPAR / EXPORT ────────────────────── */
+/* ── SELEÇÃO EM LOTE ────────────────────── */
+function atualizarSelecao(){
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  const n=chks.length;
+  document.getElementById('btnLote').style.display=n>0?'inline-flex':'none';
+  document.getElementById('loteCount').textContent=n;
+  const total=document.querySelectorAll('.chk-tarefa').length;
+  document.getElementById('chkTodos').indeterminate=n>0&&n<total;
+  document.getElementById('chkTodos').checked=n===total&&total>0;
+}
+function selecionarTodosTabela(val){
+  document.querySelectorAll('.chk-tarefa').forEach(c=>c.checked=val);
+  atualizarSelecao();
+}
+function abrirModalLote(){
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  if(!chks.length)return;
+  document.getElementById('loteInfo').textContent=`${chks.length} tarefa(s) selecionada(s) terão a data alterada.`;
+  document.getElementById('loteData').value='';
+  document.getElementById('modalLoteOverlay').classList.add('open');
+}
+function fecharModalLote(){document.getElementById('modalLoteOverlay').classList.remove('open');}
+async function confirmarLote(){
+  const novaData=document.getElementById('loteData').value;
+  if(!novaData){alert('Selecione uma data.');return;}
+  const novoDia=calToDia(novaData);
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  chks.forEach(c=>{
+    const idx=parseInt(c.dataset.idx);
+    if(tarefas[idx])tarefas[idx].dia=novoDia;
+  });
+  // Limpa seleção
+  document.querySelectorAll('.chk-tarefa').forEach(c=>c.checked=false);
+  document.getElementById('chkTodos').checked=false;
+  fecharModalLote();
+  await salvar();
+  renderTabela();
+  atualizarSelecao();
+  toast(`✓ Data alterada para ${novoDia} em ${chks.length} tarefa(s)`);
+}
+
+
 function limparFiltros(){
   document.getElementById('busca').value='';
   document.getElementById('filtDataDe').value='';

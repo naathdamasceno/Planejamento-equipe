@@ -175,6 +175,11 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
       <div class="login-card" onclick="selecionarPerfil('Pedro',this)"><div class="login-avatar" style="background:#D4EDDA;color:#155724">PE</div><div class="login-name">Pedro</div><div class="login-role">Assistente</div></div>
       <div class="login-card" onclick="selecionarPerfil('Tatyanne',this)"><div class="login-avatar" style="background:#FFF3CD;color:#856404">TA</div><div class="login-name">Tatyanne</div><div class="login-role">Supervisora</div></div>
       <div class="login-card" onclick="selecionarPerfil('Tabita',this)"><div class="login-avatar" style="background:#D6EAF8;color:#1A5276">TB</div><div class="login-name">Tábita</div><div class="login-role">Coordenadora</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Marcia',this)"><div class="login-avatar" style="background:#FCE4EC;color:#880E4F">MA</div><div class="login-name">Márcia</div><div class="login-role">Supervisora</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Janaina',this)"><div class="login-avatar" style="background:#E8F5E9;color:#1B5E20">JA</div><div class="login-name">Janaina</div><div class="login-role">Analista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Poliana',this)"><div class="login-avatar" style="background:#FFF9C4;color:#F57F17">PO</div><div class="login-name">Poliana</div><div class="login-role">Analista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('AnaLuiza',this)"><div class="login-avatar" style="background:#E3F2FD;color:#0D47A1">AL</div><div class="login-name">Ana Luiza</div><div class="login-role">Especialista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Helton',this)"><div class="login-avatar" style="background:#FFE0B2;color:#E65100">HE</div><div class="login-name">Helton</div><div class="login-role">Analista</div></div>
     </div>
     <div class="login-pin" id="pinArea"><label id="pinLabel">PIN de acesso</label>
       <input type="password" id="pinInput" maxlength="6" placeholder="••••••" oninput="checarPin()" onkeydown="if(event.key==='Enter')entrar()">
@@ -436,7 +441,7 @@ const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const TODOS_STATUS = ['Pendente','Em andamento','Aguardando Retorno','Concluído'];
 
-const PINS_DEFAULT = {Nath:'3012',Yan:'2847',Matheus:'5193',Gabriela:'7362',Thiago:'4519',Gleyce:'8274',Pedro:'3651',Tatyanne:'9420',Tabita:'6138',Marcia:'1357',Janaina:'2468',Poliana:'3579',AnaLuiza:'4680'};
+const PINS_DEFAULT = {Nath:'3012',Yan:'2847',Matheus:'5193',Gabriela:'7362',Thiago:'4519',Gleyce:'8274',Pedro:'3651',Tatyanne:'9420',Tabita:'6138',Marcia:'1357',Janaina:'2468',Poliana:'3579',AnaLuiza:'4680',Helton:'7901'};
 let PINS = {...PINS_DEFAULT};
 
 const PERFIL_INFO = {
@@ -453,23 +458,30 @@ const PERFIL_INFO = {
   Janaina:{bg:'#E8F5E9',fc:'#1B5E20',i:'JA',nome:'Janaina'},
   Poliana:{bg:'#FFF9C4',fc:'#F57F17',i:'PO',nome:'Poliana'},
   AnaLuiza:{bg:'#E3F2FD',fc:'#0D47A1',i:'AL',nome:'Ana Luiza'},
+  Helton:{bg:'#FFE0B2',fc:'#E65100',i:'HE',nome:'Helton'},
 };
 const RESP_OPTS = {
-  Nath:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'],
-  Tatyanne:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'],
-  Tabita:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'],
-  Matheus:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'],
-  Gabriela:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'],
+  Nath:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
+  Tatyanne:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
+  Tabita:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
+  Matheus:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
+  Gabriela:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
+  Marcia:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'],
   Thiago:['Thiago','Yan'],
   Gleyce:['Gleyce','Pedro'],
   Yan:['Yan'],
   Pedro:['Pedro'],
+  Janaina:['Janaina'],
+  Poliana:['Poliana'],
+  AnaLuiza:['AnaLuiza'],
+  Helton:['Helton'],
 };
 const PODE_VER = {
-  Nath:null,Tatyanne:null,Tabita:null,Matheus:null,Gabriela:null,
+  Nath:null,Tatyanne:null,Tabita:null,Matheus:null,Gabriela:null,Marcia:null,
   Thiago:['thiago','yan'],Gleyce:['gleyce','pedro'],Yan:['yan'],Pedro:['pedro'],
+  Janaina:['janaina'],Poliana:['poliana'],AnaLuiza:['analuiza'],Helton:['helton'],
 };
-const GESTORES = ['Nath','Tatyanne','Tabita'];
+const GESTORES = ['Nath','Tatyanne','Tabita','Marcia'];
 
 let perfil=null,perfilSelecionado=null,tarefas=[],historico=[],editIndex=-1,amanhaIdx=-1,histFiltro='todos',dragSrcIdx=null;
 let selectedResps=new Set();
@@ -540,12 +552,16 @@ function podeVerTarefa(t){
 }
 function podEditar(t){
   if(!t||!podeVerTarefa(t))return false;
-  if(['Nath','Tatyanne','Tabita','Matheus','Gabriela'].includes(perfil))return true;
+  if(['Nath','Tatyanne','Tabita','Matheus','Gabriela','Marcia'].includes(perfil))return true;
   const resps=parseResp(t.resp).map(r=>r.toLowerCase());
   if(perfil==='Thiago')return resps.some(r=>r.includes('thiago')||r.includes('yan'));
   if(perfil==='Gleyce')return resps.some(r=>r.includes('gleyce')||r.includes('pedro'));
   if(perfil==='Yan')return resps.some(r=>r.includes('yan'));
   if(perfil==='Pedro')return resps.some(r=>r.includes('pedro'));
+  if(perfil==='Janaina')return resps.some(r=>r.includes('janaina'));
+  if(perfil==='Poliana')return resps.some(r=>r.includes('poliana'));
+  if(perfil==='AnaLuiza')return resps.some(r=>r.includes('analuiza'));
+  if(perfil==='Helton')return resps.some(r=>r.includes('helton'));
   return false;
 }
 
@@ -613,7 +629,7 @@ function getOpcoes(key){
   if(key==='empresa')return[...new Set(tarefas.filter(t=>podeVerTarefa(t)).map(t=>t.empresa).filter(Boolean))].sort();
   if(key==='resp'){
     const perm=PODE_VER[perfil];
-    const todos=['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita'];
+    const todos=['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza','Helton'];
     if(perm===null)return todos;
     return todos.filter(o=>perm.some(p=>o.toLowerCase().includes(p)));
   }

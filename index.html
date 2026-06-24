@@ -237,6 +237,8 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
       <span class="table-title">Tarefas</span>
       <div style="display:flex;align-items:center;gap:12px">
         <button id="btnLote" onclick="abrirModalLote()" style="display:none;padding:6px 14px;border-radius:8px;background:var(--ciano-suave);color:#006080;border:1px solid var(--ciano);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📅 Alterar data (<span id="loteCount">0</span>)</button>
+        <button id="btnReplicar" onclick="abrirModalReplicar()" style="display:none;padding:6px 14px;border-radius:8px;background:#F3E8FF;color:#6B21A8;border:1px solid #C084FC;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📋 Replicar para empresa</button>
+        <button id="btnExcluirLote" onclick="excluirEmLote()" style="display:none;padding:6px 14px;border-radius:8px;background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">🗑 Excluir selecionadas</button>
         <span class="table-count" id="contagem">0 tarefas</span>
       </div>
     </div>
@@ -343,6 +345,32 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="fecharModalAlterarData()">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarAlterarData()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AMANHÃ -->
+<div class="modal-overlay" id="modalReplicarOverlay" onclick="fecharModalReplicar()">
+  <div class="modal" style="width:420px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">📋 Replicar para Outra Empresa</span>
+      <button class="modal-close" onclick="fecharModalReplicar()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="replicarInfo" style="font-size:13px;color:var(--cinza-texto);margin-bottom:16px"></div>
+      <div class="form-group">
+        <label>Empresa de destino *</label>
+        <input type="text" id="replicarEmpresa" placeholder="Digite o nome da empresa" list="replicarEmpresasList" autocomplete="off">
+        <datalist id="replicarEmpresasList"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Nova data (opcional)</label>
+        <input type="date" id="replicarData">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModalReplicar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarReplicar()">Replicar</button>
     </div>
   </div>
 </div>
@@ -1056,10 +1084,67 @@ function atualizarSelecao(){
   const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
   const n=chks.length;
   document.getElementById('btnLote').style.display=n>0?'inline-flex':'none';
+  document.getElementById('btnReplicar').style.display=n>0?'inline-flex':'none';
+  document.getElementById('btnExcluirLote').style.display=n>0?'inline-flex':'none';
   document.getElementById('loteCount').textContent=n;
   const total=document.querySelectorAll('.chk-tarefa').length;
   document.getElementById('chkTodos').indeterminate=n>0&&n<total;
   document.getElementById('chkTodos').checked=n===total&&total>0;
+}
+
+async function excluirEmLote(){
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  if(!chks.length)return;
+  const indices=chks.map(c=>parseInt(c.dataset.idx));
+  const editaveis=indices.filter(i=>podEditar(tarefas[i]));
+  if(!editaveis.length){alert('Sem permissão para excluir as tarefas selecionadas.');return;}
+  if(!confirm(`Excluir ${editaveis.length} tarefa(s) selecionada(s)? Esta ação não pode ser desfeita.`))return;
+  const removidas=editaveis.map(i=>tarefas[i]);
+  tarefas=tarefas.filter((_,i)=>!editaveis.includes(i));
+  document.querySelectorAll('.chk-tarefa').forEach(c=>c.checked=false);
+  document.getElementById('chkTodos').checked=false;
+  await salvar();
+  for(const t of removidas)await registrarHist('excluiu',t);
+  construirMultiselects();renderStats();renderTabela();atualizarSelecao();
+  toast(`🗑 ${removidas.length} tarefa(s) excluída(s)`);
+}
+
+function abrirModalReplicar(){
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  if(!chks.length)return;
+  document.getElementById('replicarInfo').textContent=`${chks.length} tarefa(s) serão replicadas para a nova empresa.`;
+  document.getElementById('replicarEmpresa').value='';
+  document.getElementById('replicarData').value='';
+  const empresas=[...new Set(tarefas.map(t=>t.empresa).filter(Boolean))].sort();
+  document.getElementById('replicarEmpresasList').innerHTML=empresas.map(e=>`<option value="${e}">`).join('');
+  document.getElementById('modalReplicarOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('replicarEmpresa').focus(),50);
+}
+function fecharModalReplicar(){document.getElementById('modalReplicarOverlay').classList.remove('open');}
+async function confirmarReplicar(){
+  const novaEmpresa=document.getElementById('replicarEmpresa').value.trim();
+  if(!novaEmpresa){alert('Digite o nome da empresa de destino.');return;}
+  const novaData=document.getElementById('replicarData').value;
+  const novoDia=novaData?calToDia(novaData):null;
+  const chks=[...document.querySelectorAll('.chk-tarefa:checked')];
+  const novas=chks.map(c=>{
+    const orig={...tarefas[parseInt(c.dataset.idx)]};
+    orig.empresa=novaEmpresa;
+    if(novoDia)orig.dia=novoDia;
+    orig._ord=tarefas.length+chks.indexOf(c);
+    delete orig.criadoPor;
+    orig.criadoPor=perfil;
+    orig.status='Pendente';
+    return orig;
+  });
+  tarefas.push(...novas);
+  document.querySelectorAll('.chk-tarefa').forEach(c=>c.checked=false);
+  document.getElementById('chkTodos').checked=false;
+  fecharModalReplicar();
+  await salvar();
+  for(const t of novas)await registrarHist('criou',t);
+  construirMultiselects();renderStats();renderTabela();atualizarSelecao();
+  toast(`📋 ${novas.length} tarefa(s) replicada(s) para "${novaEmpresa}"`);
 }
 function selecionarTodosTabela(val){
   document.querySelectorAll('.chk-tarefa').forEach(c=>c.checked=val);

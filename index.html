@@ -204,6 +204,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
     <button class="btn btn-ghost" onclick="recarregarDados()" title="Atualizar">🔄</button>
     <button class="btn btn-ghost" onclick="abrirModalPin()" title="Alterar PIN">🔑</button>
     <button class="btn btn-hist" id="btnHistorico" onclick="abrirModalHistorico()" style="display:none">📜 Histórico</button>
+    <button class="btn btn-ghost" id="btnGerenciarUsuarios" onclick="abrirModalUsuarios()" style="display:none;font-size:13px" title="Gerenciar Usuários">👥 Usuários</button>
     <button class="btn btn-mes" onclick="abrirModalMes()">📅 Novo Mês</button>
     <button class="btn btn-ghost" onclick="exportarExcel()">⬇ Excel</button>
     <button class="btn btn-primary" onclick="abrirModal()">+ Nova tarefa</button>
@@ -349,7 +350,120 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
   </div>
 </div>
 
-<!-- MODAL AMANHÃ -->
+<!-- MODAL GERENCIAR USUÁRIOS -->
+<div class="modal-overlay" id="modalUsuariosOverlay" onclick="fecharModalUsuarios()">
+  <div class="modal" style="width:600px;max-height:85vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">👥 Gerenciar Usuários</span>
+      <button class="modal-close" onclick="fecharModalUsuarios()">×</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <div id="listaUsuarios" style="margin-bottom:20px"></div>
+      <hr style="border:none;border-top:1px solid #eee;margin-bottom:16px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:12px;color:var(--verde-escuro)">➕ Novo usuário</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Nome (sem espaços) *</label>
+          <input type="text" id="novoUsuarioKey" placeholder="Ex: Joao" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Nome de exibição *</label>
+          <input type="text" id="novoUsuarioNome" placeholder="Ex: João Silva">
+        </div>
+        <div class="form-group">
+          <label>Cargo</label>
+          <input type="text" id="novoUsuarioCargo" placeholder="Ex: Analista">
+        </div>
+        <div class="form-group">
+          <label>PIN (4-6 dígitos) *</label>
+          <input type="text" id="novoUsuarioPin" maxlength="6" placeholder="Ex: 1234">
+        </div>
+        <div class="form-group">
+          <label>Cor do avatar</label>
+          <select id="novoUsuarioCor">
+            <option value="verde">Verde</option>
+            <option value="azul">Azul</option>
+            <option value="roxo">Roxo</option>
+            <option value="laranja">Laranja</option>
+            <option value="rosa">Rosa</option>
+            <option value="amarelo">Amarelo</option>
+            <option value="ciano">Ciano</option>
+            <option value="vermelho">Vermelho</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nível de acesso *</label>
+          <select id="novoUsuarioAcesso">
+            <option value="">Selecione...</option>
+            <option value="gestor">Gestor (acesso total + histórico)</option>
+            <option value="total">Especialista (acesso total)</option>
+            <option value="restrito">Restrito (só próprias tarefas)</option>
+          </select>
+        </div>
+      </div>
+      <div id="erroNovoUsuario" style="color:#dc2626;font-size:12px;min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModalUsuarios()">Fechar</button>
+      <button class="btn btn-primary" onclick="salvarNovoUsuario()">➕ Adicionar usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR USUÁRIO -->
+<div class="modal-overlay" id="modalEditarUsuarioOverlay" onclick="fecharEditarUsuario()">
+  <div class="modal" style="width:480px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Editar Usuário</span>
+      <button class="modal-close" onclick="fecharEditarUsuario()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editUsuarioKey">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Nome de exibição *</label>
+          <input type="text" id="editUsuarioNome" placeholder="Ex: João Silva">
+        </div>
+        <div class="form-group">
+          <label>Cargo</label>
+          <input type="text" id="editUsuarioCargo" placeholder="Ex: Analista">
+        </div>
+        <div class="form-group">
+          <label>Novo PIN (deixe em branco para manter)</label>
+          <input type="text" id="editUsuarioPin" maxlength="6" placeholder="4 a 6 dígitos">
+        </div>
+        <div class="form-group">
+          <label>Cor do avatar</label>
+          <select id="editUsuarioCor">
+            <option value="verde">Verde</option>
+            <option value="azul">Azul</option>
+            <option value="roxo">Roxo</option>
+            <option value="laranja">Laranja</option>
+            <option value="rosa">Rosa</option>
+            <option value="amarelo">Amarelo</option>
+            <option value="ciano">Ciano</option>
+            <option value="vermelho">Vermelho</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nível de acesso *</label>
+          <select id="editUsuarioAcesso">
+            <option value="gestor">Gestor (acesso total + histórico)</option>
+            <option value="total">Especialista (acesso total)</option>
+            <option value="restrito">Restrito (só próprias tarefas)</option>
+          </select>
+        </div>
+      </div>
+      <div id="erroEditUsuario" style="color:#dc2626;font-size:12px;min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharEditarUsuario()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarEditarUsuario()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPLICAR -->
 <div class="modal-overlay" id="modalReplicarOverlay" onclick="fecharModalReplicar()">
   <div class="modal" style="width:420px" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -560,6 +674,7 @@ async function entrar(){
   av.style.background=info.bg;av.style.color=info.fc;av.textContent=info.i;
   document.getElementById('headerName').textContent=info.nome;
   document.getElementById('btnHistorico').style.display=GESTORES.includes(perfil)?'inline-flex':'none';
+  document.getElementById('btnGerenciarUsuarios').style.display=perfil==='Nath'?'inline-flex':'none';
   await carregarDados();
 }
 function sair(){
@@ -956,7 +1071,216 @@ async function excluirTarefa(){
   construirMultiselects();renderStats();renderTabela();toast('🗑 Tarefa excluída');
 }
 
-/* ── MODAL AMANHÃ ───────────────────────── */
+/* ── GERENCIAR USUÁRIOS ─────────────────── */
+const COR_AVATAR={
+  verde:{bg:'#C9F7E2',fc:'#00BF63'},
+  azul:{bg:'#E3F2FD',fc:'#0D47A1'},
+  roxo:{bg:'#E2D9F3',fc:'#432874'},
+  laranja:{bg:'#FFE0B2',fc:'#E65100'},
+  rosa:{bg:'#FCE4EC',fc:'#880E4F'},
+  amarelo:{bg:'#FFF9C4',fc:'#F57F17'},
+  ciano:{bg:'#E0F7FA',fc:'#006064'},
+  vermelho:{bg:'#FFEBEE',fc:'#B71C1C'},
+};
+
+function abrirModalUsuarios(){
+  renderListaUsuarios();
+  document.getElementById('novoUsuarioKey').value='';
+  document.getElementById('novoUsuarioNome').value='';
+  document.getElementById('novoUsuarioCargo').value='';
+  document.getElementById('novoUsuarioPin').value='';
+  document.getElementById('novoUsuarioAcesso').value='';
+  document.getElementById('erroNovoUsuario').textContent='';
+  document.getElementById('modalUsuariosOverlay').classList.add('open');
+}
+function fecharModalUsuarios(){document.getElementById('modalUsuariosOverlay').classList.remove('open');}
+
+function renderListaUsuarios(){
+  const lista=document.getElementById('listaUsuarios');
+  const keys=Object.keys(PERFIL_INFO);
+  lista.innerHTML=`
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--verde-escuro)">Usuários cadastrados (${keys.length})</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+    ${keys.map(k=>{
+      const u=PERFIL_INFO[k];
+      const acesso=GESTORES.includes(k)?'Gestor':PODE_VER[k]===null?'Especialista':'Restrito';
+      const cor=acesso==='Gestor'?'#16a34a':acesso==='Especialista'?'#2563eb':'#9333ea';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#f9f9f9;border:1px solid #eee">
+        <div style="width:32px;height:32px;border-radius:50%;background:${u.bg};color:${u.fc};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${u.i}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${u.nome} <span style="font-size:11px;color:#888;font-weight:400">${k!==u.nome?'('+k+')':''}</span></div>
+          <div style="font-size:11px;color:${cor};font-weight:600">${acesso}</div>
+        </div>
+        <button onclick="abrirEditarUsuario('${k}')" style="background:none;border:none;cursor:pointer;color:#2563eb;font-size:15px;padding:4px" title="Editar">✏️</button>
+        ${k!=='Nath'?`<button onclick="excluirUsuario('${k}')" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:15px;padding:4px" title="Excluir">🗑</button>`:'<span style="width:28px"></span>'}
+      </div>`;
+    }).join('')}
+    </div>`;
+}
+
+async function salvarNovoUsuario(){
+  const key=document.getElementById('novoUsuarioKey').value.trim().replace(/\s+/g,'');
+  const nome=document.getElementById('novoUsuarioNome').value.trim();
+  const cargo=document.getElementById('novoUsuarioCargo').value.trim();
+  const pin=document.getElementById('novoUsuarioPin').value.trim();
+  const cor=document.getElementById('novoUsuarioCor').value;
+  const acesso=document.getElementById('novoUsuarioAcesso').value;
+  const erro=document.getElementById('erroNovoUsuario');
+
+  if(!key||!nome||!pin||!acesso){erro.textContent='Preencha todos os campos obrigatórios (*)';return;}
+  if(!/^\d{4,6}$/.test(pin)){erro.textContent='PIN deve ter 4 a 6 dígitos numéricos';return;}
+  if(PERFIL_INFO[key]){erro.textContent=`Já existe um usuário com a chave "${key}"`;return;}
+  erro.textContent='';
+
+  const c=COR_AVATAR[cor]||COR_AVATAR.verde;
+  const iniciais=nome.split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
+
+  // Adiciona no PERFIL_INFO
+  PERFIL_INFO[key]={bg:c.bg,fc:c.fc,i:iniciais,nome,cargo:cargo||''};
+
+  // PIN
+  PINS[key]=pin;
+  PINS_DEFAULT[key]=pin;
+  await fbSalvarPins();
+
+  // Acesso
+  if(acesso==='gestor'){
+    GESTORES.push(key);
+    PODE_VER[key]=null;
+    RESP_OPTS[key]=[...Object.keys(PERFIL_INFO)];
+  } else if(acesso==='total'){
+    PODE_VER[key]=null;
+    RESP_OPTS[key]=[...Object.keys(PERFIL_INFO)];
+  } else {
+    PODE_VER[key]=[key.toLowerCase()];
+    RESP_OPTS[key]=[key];
+  }
+
+  // Adiciona card na tela de login
+  const grid=document.querySelector('.login-grid');
+  if(grid){
+    const div=document.createElement('div');
+    div.className='login-card';
+    div.setAttribute('onclick',`selecionarPerfil('${key}',this)`);
+    div.innerHTML=`<div class="login-avatar" style="background:${c.bg};color:${c.fc}">${iniciais}</div><div class="login-name">${nome}</div><div class="login-role">${cargo||''}</div>`;
+    grid.appendChild(div);
+  }
+
+  // Atualiza lista de responsáveis dos gestores/total
+  Object.keys(RESP_OPTS).forEach(k=>{
+    if(PODE_VER[k]===null&&!RESP_OPTS[k].includes(key))RESP_OPTS[k].push(key);
+  });
+
+  construirMultiselects();
+  renderListaUsuarios();
+  document.getElementById('novoUsuarioKey').value='';
+  document.getElementById('novoUsuarioNome').value='';
+  document.getElementById('novoUsuarioCargo').value='';
+  document.getElementById('novoUsuarioPin').value='';
+  document.getElementById('novoUsuarioAcesso').value='';
+  toast(`✅ Usuário "${nome}" adicionado com sucesso!`);
+}
+
+function abrirEditarUsuario(key){
+  const u=PERFIL_INFO[key];
+  if(!u)return;
+  document.getElementById('editUsuarioKey').value=key;
+  document.getElementById('editUsuarioNome').value=u.nome||'';
+  document.getElementById('editUsuarioCargo').value=u.cargo||'';
+  document.getElementById('editUsuarioPin').value='';
+  document.getElementById('erroEditUsuario').textContent='';
+  // Detecta cor atual pelo bg
+  const corAtual=Object.keys(COR_AVATAR).find(c=>COR_AVATAR[c].bg===u.bg)||'verde';
+  document.getElementById('editUsuarioCor').value=corAtual;
+  // Detecta acesso atual
+  const acesso=GESTORES.includes(key)?'gestor':PODE_VER[key]===null?'total':'restrito';
+  document.getElementById('editUsuarioAcesso').value=acesso;
+  document.getElementById('modalEditarUsuarioOverlay').classList.add('open');
+}
+function fecharEditarUsuario(){document.getElementById('modalEditarUsuarioOverlay').classList.remove('open');}
+
+async function confirmarEditarUsuario(){
+  const key=document.getElementById('editUsuarioKey').value;
+  const nome=document.getElementById('editUsuarioNome').value.trim();
+  const cargo=document.getElementById('editUsuarioCargo').value.trim();
+  const pin=document.getElementById('editUsuarioPin').value.trim();
+  const cor=document.getElementById('editUsuarioCor').value;
+  const acesso=document.getElementById('editUsuarioAcesso').value;
+  const erro=document.getElementById('erroEditUsuario');
+
+  if(!nome){erro.textContent='Nome de exibição é obrigatório';return;}
+  if(pin&&!/^\d{4,6}$/.test(pin)){erro.textContent='PIN deve ter 4 a 6 dígitos numéricos';return;}
+  erro.textContent='';
+
+  const c=COR_AVATAR[cor]||COR_AVATAR.verde;
+  const iniciais=nome.split(' ').filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('');
+
+  // Atualiza PERFIL_INFO
+  PERFIL_INFO[key]={...PERFIL_INFO[key],bg:c.bg,fc:c.fc,i:iniciais,nome,cargo};
+
+  // Atualiza PIN se informado
+  if(pin){PINS[key]=pin;PINS_DEFAULT[key]=pin;await fbSalvarPins();}
+
+  // Atualiza acesso
+  const giAtual=GESTORES.indexOf(key);
+  if(acesso==='gestor'){
+    if(giAtual===-1)GESTORES.push(key);
+    PODE_VER[key]=null;
+    if(!RESP_OPTS[key]||RESP_OPTS[key].length<=1)RESP_OPTS[key]=[...Object.keys(PERFIL_INFO)];
+  } else if(acesso==='total'){
+    if(giAtual>-1)GESTORES.splice(giAtual,1);
+    PODE_VER[key]=null;
+    if(!RESP_OPTS[key]||RESP_OPTS[key].length<=1)RESP_OPTS[key]=[...Object.keys(PERFIL_INFO)];
+  } else {
+    if(giAtual>-1)GESTORES.splice(giAtual,1);
+    PODE_VER[key]=[key.toLowerCase()];
+    RESP_OPTS[key]=[key];
+  }
+
+  // Atualiza card de login
+  document.querySelectorAll('.login-card').forEach(card=>{
+    if(card.getAttribute('onclick')&&card.getAttribute('onclick').includes(`'${key}'`)){
+      card.querySelector('.login-avatar').style.background=c.bg;
+      card.querySelector('.login-avatar').style.color=c.fc;
+      card.querySelector('.login-avatar').textContent=iniciais;
+      card.querySelector('.login-name').textContent=nome;
+      if(card.querySelector('.login-role'))card.querySelector('.login-role').textContent=cargo;
+    }
+  });
+
+  fecharEditarUsuario();
+  construirMultiselects();
+  renderListaUsuarios();
+  toast(`✅ Usuário "${nome}" atualizado!`);
+}
+
+async function excluirUsuario(key){
+  if(!confirm(`Excluir o usuário "${PERFIL_INFO[key].nome}"?\nEsta ação remove o acesso mas não apaga as tarefas atribuídas a ele.`))return;
+
+  // Remove de todas as estruturas
+  delete PERFIL_INFO[key];
+  delete PODE_VER[key];
+  delete RESP_OPTS[key];
+  delete PINS[key];
+  delete PINS_DEFAULT[key];
+  const gi=GESTORES.indexOf(key);
+  if(gi>-1)GESTORES.splice(gi,1);
+
+  // Remove o card de login
+  document.querySelectorAll('.login-card').forEach(card=>{
+    if(card.getAttribute('onclick')&&card.getAttribute('onclick').includes(`'${key}'`))card.remove();
+  });
+
+  // Remove da lista de responsáveis dos outros
+  Object.keys(RESP_OPTS).forEach(k=>{
+    RESP_OPTS[k]=RESP_OPTS[k].filter(r=>r!==key);
+  });
+
+  await fbSalvarPins();
+  construirMultiselects();
+  renderListaUsuarios();
+  toast(`🗑 Usuário removido`);
+}
 function abrirModalAmanha(idx){
   amanhaIdx=idx;
   const t=tarefas[idx];

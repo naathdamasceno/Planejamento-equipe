@@ -22,7 +22,7 @@ body{font-family:'DM Sans',sans-serif;background:#F7FAF8;color:var(--preto);min-
 .login-logo{width:52px;height:52px;background:var(--verde);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
 .login-title{color:var(--branco);font-size:22px;font-weight:600;margin-bottom:4px}
 .login-sub{color:#666;font-size:14px;margin-bottom:24px}
-.login-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+.login-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
 .login-card{padding:12px 8px;border-radius:12px;border:2px solid #2a2a2a;cursor:pointer;transition:all 0.2s;background:#222;text-align:center}
 .login-card:hover{border-color:#444;background:#2a2a2a}
 .login-card.selected{border-color:var(--verde);background:#1e2e27}
@@ -168,18 +168,11 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
     <div class="login-sub">Selecione seu perfil para continuar</div>
     <div class="login-grid">
       <div class="login-card" onclick="selecionarPerfil('Nath',this)"><div class="login-avatar" style="background:var(--roxo-suave);color:var(--roxo-escuro)">NA</div><div class="login-name">Nathália</div><div class="login-role">Analista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Yan',this)"><div class="login-avatar" style="background:var(--verde-suave);color:var(--verde-escuro)">YA</div><div class="login-name">Yan</div><div class="login-role">Auxiliar</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Matheus',this)"><div class="login-avatar" style="background:#FFF3CD;color:#856404">MA</div><div class="login-name">Matheus F.</div><div class="login-role">Especialista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Gabriela',this)"><div class="login-avatar" style="background:#F8D7DA;color:#842029">GA</div><div class="login-name">Gabriela</div><div class="login-role">Especialista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Thiago',this)"><div class="login-avatar" style="background:#D1ECF1;color:#0c5460">TH</div><div class="login-name">Thiago</div><div class="login-role">Analista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Gleyce',this)"><div class="login-avatar" style="background:#E2D9F3;color:#432874">GL</div><div class="login-name">Gleyce</div><div class="login-role">Analista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Pedro',this)"><div class="login-avatar" style="background:#D4EDDA;color:#155724">PE</div><div class="login-name">Pedro</div><div class="login-role">Assistente</div></div>
       <div class="login-card" onclick="selecionarPerfil('Tatyanne',this)"><div class="login-avatar" style="background:#FFF3CD;color:#856404">TA</div><div class="login-name">Tatyanne</div><div class="login-role">Supervisora</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Tabita',this)"><div class="login-avatar" style="background:#D6EAF8;color:#1A5276">TB</div><div class="login-name">Tábita</div><div class="login-role">Coordenadora</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Marcia',this)"><div class="login-avatar" style="background:#FCE4EC;color:#880E4F">MA</div><div class="login-name">Márcia</div><div class="login-role">Supervisora</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Janaina',this)"><div class="login-avatar" style="background:#E8F5E9;color:#1B5E20">JA</div><div class="login-name">Janaína</div><div class="login-role">Analista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('Poliana',this)"><div class="login-avatar" style="background:#FFF9C4;color:#F57F17">PO</div><div class="login-name">Poliana</div><div class="login-role">Analista</div></div>
-      <div class="login-card" onclick="selecionarPerfil('AnaLuiza',this)"><div class="login-avatar" style="background:#E3F2FD;color:#0D47A1">AL</div><div class="login-name">Ana Luiza</div><div class="login-role">Especialista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Thiago',this)"><div class="login-avatar" style="background:#D1ECF1;color:#0c5460">TH</div><div class="login-name">Thiago</div><div class="login-role">Analista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Yan',this)"><div class="login-avatar" style="background:var(--verde-suave);color:var(--verde-escuro)">YA</div><div class="login-name">Yan</div><div class="login-role">Auxiliar</div></div>
+      <div class="login-card" onclick="selecionarPerfil('Gabriela',this)"><div class="login-avatar" style="background:#F8D7DA;color:#842029">GA</div><div class="login-name">Gabriela</div><div class="login-role">Especialista</div></div>
+      <div class="login-card" onclick="selecionarPerfil('AnaCosta',this)"><div class="login-avatar" style="background:#E8F5E9;color:#1B5E20">AC</div><div class="login-name">Ana Costa</div><div class="login-role">Assistente</div></div>
     </div>
     <div class="login-pin" id="pinArea">
       <label id="pinLabel">PIN de acesso</label>
@@ -584,45 +577,30 @@ const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const TODOS_STATUS = ['Pendente','Em andamento','Aguardando Retorno','Concluído'];
 
-const PINS_DEFAULT = {Nath:'3012',Yan:'2847',Matheus:'5193',Gabriela:'7362',Thiago:'4519',Gleyce:'8274',Pedro:'3651',Tatyanne:'9420',Tabita:'6138',Marcia:'1357',Janaina:'2468',Poliana:'3579',AnaLuiza:'4680'};
+const PINS_DEFAULT = {Nath:'3012',Tatyanne:'9420',Thiago:'4519',Yan:'2847',Gabriela:'7362',AnaCosta:'5831'};
 let PINS = {...PINS_DEFAULT};
 
 const PERFIL_INFO = {
   Nath:{bg:'var(--roxo-suave)',fc:'var(--roxo-escuro)',i:'NA',nome:'Nathália'},
-  Yan:{bg:'var(--verde-suave)',fc:'var(--verde-escuro)',i:'YA',nome:'Yan'},
-  Matheus:{bg:'#FFF3CD',fc:'#856404',i:'MA',nome:'Matheus F.'},
-  Gabriela:{bg:'#F8D7DA',fc:'#842029',i:'GA',nome:'Gabriela'},
-  Thiago:{bg:'#D1ECF1',fc:'#0c5460',i:'TH',nome:'Thiago'},
-  Gleyce:{bg:'#E2D9F3',fc:'#432874',i:'GL',nome:'Gleyce'},
-  Pedro:{bg:'#D4EDDA',fc:'#155724',i:'PE',nome:'Pedro'},
   Tatyanne:{bg:'#FFF3CD',fc:'#856404',i:'TA',nome:'Tatyanne'},
-  Tabita:{bg:'#D6EAF8',fc:'#1A5276',i:'TB',nome:'Tábita'},
-  Marcia:{bg:'#FCE4EC',fc:'#880E4F',i:'MA',nome:'Márcia'},
-  Janaina:{bg:'#E8F5E9',fc:'#1B5E20',i:'JA',nome:'Janaína'},
-  Poliana:{bg:'#FFF9C4',fc:'#F57F17',i:'PO',nome:'Poliana'},
-  AnaLuiza:{bg:'#E3F2FD',fc:'#0D47A1',i:'AL',nome:'Ana Luiza'},
+  Thiago:{bg:'#D1ECF1',fc:'#0c5460',i:'TH',nome:'Thiago'},
+  Yan:{bg:'var(--verde-suave)',fc:'var(--verde-escuro)',i:'YA',nome:'Yan'},
+  Gabriela:{bg:'#F8D7DA',fc:'#842029',i:'GA',nome:'Gabriela'},
+  AnaCosta:{bg:'#E8F5E9',fc:'#1B5E20',i:'AC',nome:'Ana Costa'},
 };
 const RESP_OPTS = {
-  Nath:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
-  Tatyanne:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
-  Tabita:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
-  Matheus:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
-  Gabriela:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
-  Marcia:['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'],
+  Nath:['Nath','Tatyanne','Thiago','Yan','Gabriela','AnaCosta'],
+  Tatyanne:['Nath','Tatyanne','Thiago','Yan','Gabriela','AnaCosta'],
   Thiago:['Thiago','Yan'],
-  Gleyce:['Gleyce','Pedro'],
   Yan:['Yan'],
-  Pedro:['Pedro'],
-  Janaina:['Janaina'],
-  Poliana:['Poliana'],
-  AnaLuiza:['AnaLuiza'],
+  Gabriela:['Gabriela'],
+  AnaCosta:['AnaCosta'],
 };
 const PODE_VER = {
-  Nath:null,Tatyanne:null,Tabita:null,Matheus:null,Gabriela:null,Marcia:null,
-  Thiago:['thiago','yan'],Gleyce:['gleyce','pedro'],Yan:['yan'],Pedro:['pedro'],
-  Janaina:['janaina'],Poliana:['poliana'],AnaLuiza:['analuiza'],
+  Nath:null,Tatyanne:null,
+  Thiago:['thiago','yan'],Yan:['yan'],Gabriela:['gabriela'],AnaCosta:['anacosta'],
 };
-const GESTORES = ['Nath','Tatyanne','Tabita','Marcia'];
+const GESTORES = ['Nath','Tatyanne'];
 
 let perfil=null,perfilSelecionado=null,tarefas=[],historico=[],editIndex=-1,amanhaIdx=-1,histFiltro='todos',dragSrcIdx=null;
 let selectedResps=new Set();
@@ -697,16 +675,11 @@ function podeVerTarefa(t){
 }
 function podEditar(t){
   if(!t||!podeVerTarefa(t))return false;
-  if(['Nath','Tatyanne','Tabita','Matheus','Gabriela','Marcia'].includes(perfil))return true;
+  if(['Nath','Tatyanne','Gabriela'].includes(perfil))return true;
   const resps=parseResp(t.resp).map(r=>r.toLowerCase());
   if(perfil==='Thiago')return resps.some(r=>r.includes('thiago')||r.includes('yan'));
-  if(perfil==='Gleyce')return resps.some(r=>r.includes('gleyce')||r.includes('pedro'));
   if(perfil==='Yan')return resps.some(r=>r.includes('yan'));
-  if(perfil==='Pedro')return resps.some(r=>r.includes('pedro'));
-  if(perfil==='Janaina')return resps.some(r=>r.includes('janaina'));
-  if(perfil==='Poliana')return resps.some(r=>r.includes('poliana'));
-  if(perfil==='AnaLuiza')return resps.some(r=>r.includes('analuiza'));
-  if(perfil==='Helton')return resps.some(r=>r.includes('helton'));
+  if(perfil==='AnaCosta')return resps.some(r=>r.includes('anacosta'));
   return false;
 }
 
@@ -774,7 +747,7 @@ function getOpcoes(key){
   if(key==='empresa')return[...new Set(tarefas.filter(t=>podeVerTarefa(t)).map(t=>t.empresa).filter(Boolean))].sort();
   if(key==='resp'){
     const perm=PODE_VER[perfil];
-    const todos=['Nath','Yan','Matheus','Gabriela','Thiago','Gleyce','Pedro','Tatyanne','Tabita','Marcia','Janaina','Poliana','AnaLuiza'];
+    const todos=['Nath','Tatyanne','Thiago','Yan','Gabriela','AnaCosta'];
     if(perm===null)return todos;
     return todos.filter(o=>perm.some(p=>o.toLowerCase().includes(p)));
   }

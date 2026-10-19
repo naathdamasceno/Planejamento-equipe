@@ -507,7 +507,9 @@ const FB      = FB_BASE+'/.json';
 const FB_HIST = FB_BASE+'/historico.json';
 const FB_PINS = FB_BASE+'/pins.json';
 const FB_USERS = FB_BASE+'/usuarios.json';
-const FB_TAREFAS = FB_BASE+'/tarefas.json';
+const FB_TAREFAS = FB_BASE+'/tarefas.json'; // formato antigo (lista inteira)
+const FB_TAREFAS_V2 = FB_BASE+'/tarefas_v2.json'; // cada tarefa salva separadamente pelo id
+const FB_V2_OK = FB_BASE+'/tarefas_v2_migrado.json';
 const FB_BACKUP = FB_BASE+'/backup_antes_migracao.json';
 
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -608,7 +610,7 @@ function initOrd(arr){
 }
 /* Tarefas ficam em /tarefas. Versões antigas gravavam na raiz do banco,
    o que apagava PINs e usuários a cada salvamento: migra uma única vez. */
-async function lerTarefas(){
+async function lerTarefasLegado(){
   const d=await fbGet(FB_TAREFAS);
   if(d!==null&&d!==undefined)return fbToArr(d);
   const raiz=await fbGet(FB);
@@ -622,6 +624,32 @@ async function lerTarefas(){
   await fetch(FB,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(limpar)});
   return lista;
 }
+/* ── SINCRONIZAÇÃO POR TAREFA ──────────────
+   Cada tarefa tem um id e é gravada sozinha. Assim, quem está com a tela
+   desatualizada não apaga o que outra pessoa acabou de salvar. */
+let syncSnap={};
+function novoId(){return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function tirarFoto(arr){syncSnap={};arr.forEach(t=>{syncSnap[t.id]=JSON.stringify(t);});}
+function garantirIds(){
+  const vistos=new Set();
+  tarefas.forEach(t=>{if(!t.id||vistos.has(t.id))t.id=novoId();vistos.add(t.id);});
+}
+async function lerTarefas(){
+  const d=await fbGet(FB_TAREFAS_V2);
+  if(d&&typeof d==='object'){
+    const arr=Object.entries(d).filter(([,t])=>t&&typeof t==='object').map(([k,t])=>({...t,id:k}));
+    arr.sort((a,b)=>((a._ord??0)-(b._ord??0))||String(a.id).localeCompare(String(b.id)));
+    tirarFoto(arr);return arr;
+  }
+  if(await fbGet(FB_V2_OK)){tirarFoto([]);return[];}
+  // primeira vez: converte do formato antigo
+  const antigas=await lerTarefasLegado();
+  const obj={};
+  antigas.forEach((t,i)=>{t.id=novoId();t._ord=i;obj[t.id]=t;});
+  if(antigas.length)await fbPut(FB_TAREFAS_V2,obj);
+  await fbPut(FB_V2_OK,true);
+  tirarFoto(antigas);return antigas;
+}
 async function carregarDados(){
   setSyncing();
   try{
@@ -633,21 +661,30 @@ async function carregarDados(){
   }catch(e){setSyncError();toast('Erro ao carregar: '+e.message,4000);tarefas=[];historico=[];}
   construirMultiselects();renderStats();renderTabela();
 }
-async function recarregarDados(){
+async function recarregarDados(silencioso=false){
   setSyncing();
   try{
     const[td,hd]=await Promise.all([lerTarefas(),fbGet(FB_HIST).catch(()=>null),carregarUsuarios()]);
     tarefas=initOrd(td);
     historico=fbToArr(hd);
     await fbLerPins();
-    setSynced();toast('✓ Dados atualizados');
-  }catch(e){setSyncError();toast('Erro ao atualizar');}
+    setSynced();if(!silencioso)toast('✓ Dados atualizados');
+  }catch(e){setSyncError();if(!silencioso)toast('Erro ao atualizar');}
   construirMultiselects();renderStats();renderTabela();
 }
 async function salvar(){
+  garantirIds();
+  const patch={},atuais=new Set();
+  tarefas.forEach(t=>{atuais.add(t.id);const j=JSON.stringify(t);if(syncSnap[t.id]!==j)patch[t.id]=t;});
+  Object.keys(syncSnap).forEach(id=>{if(!atuais.has(id))patch[id]=null;});
+  if(!Object.keys(patch).length){setSynced();return;}
   setSyncing();
-  try{await fbPut(FB_TAREFAS,tarefas);setSynced();}
-  catch(e){setSyncError();toast('Erro ao salvar: '+e.message,4000);}
+  try{
+    const r=await fetch(FB_TAREFAS_V2,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    Object.entries(patch).forEach(([id,t])=>{if(t===null)delete syncSnap[id];else syncSnap[id]=JSON.stringify(t);});
+    setSynced();
+  }catch(e){setSyncError();toast('Erro ao salvar: '+e.message,4000);}
 }
 
 /* ── DATA ───────────────────────────────── */
@@ -1484,6 +1521,16 @@ function exportarExcel(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalAmanha();fecharModalHistorico();fecharModalMes();fecharModalPin();}});
 document.getElementById('loginScreen').style.display='flex';
 iniciarApp();
+/* Atualiza sozinho a cada 30s (e ao voltar para a aba) quando ninguém está editando */
+function podeAutoAtualizar(){
+  return perfil&&!document.hidden&&dragSrcIdx===null
+    &&!document.querySelector('.modal-overlay.open')
+    &&!document.querySelector('.chk-tarefa:checked')
+    &&!document.querySelector('.ms-dropdown.open')
+    &&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('tbody'));
+}
+setInterval(()=>{if(podeAutoAtualizar())recarregarDados(true);},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&podeAutoAtualizar())recarregarDados(true);});
 </script>
 </body>
 </html>

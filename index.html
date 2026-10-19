@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planning</title>
+<title>Planejamento de fechamento</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -164,7 +164,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">📋</div>
-    <div class="login-title">Planning</div>
+    <div class="login-title">Planejamento de fechamento</div>
     <div class="login-sub">Selecione seu perfil para continuar</div>
     <div class="login-grid"><div style="grid-column:1/-1;color:#666;font-size:13px;padding:20px">Carregando perfis...</div></div>
     <div class="login-pin" id="pinArea">
@@ -178,7 +178,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
 <!-- HEADER -->
 <header>
   <div style="display:flex;align-items:center;gap:12px">
-    <div class="logo"><div class="logo-dot">📋</div>Planning</div>
+    <div class="logo"><div class="logo-dot">📋</div>Planejamento de fechamento</div>
     <div class="sync-badge"><div class="sync-dot" id="syncDot"></div><span id="syncText">Sincronizado</span></div>
   </div>
   <div class="header-actions">
@@ -193,6 +193,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
     <button class="btn btn-ghost" id="btnGerenciarUsuarios" onclick="abrirModalUsuarios()" style="display:none;font-size:13px" title="Gerenciar Usuários">👥 Usuários</button>
     <button class="btn btn-mes" onclick="abrirModalMes()">📅 Novo Mês</button>
     <button class="btn btn-ghost" onclick="exportarExcel()">⬇ Excel</button>
+    <button class="btn" id="btnRascunho" onclick="continuarRascunho()" style="display:none;background:#FFF3E0;color:#B45309;border:1px solid #FCD34D" title="Você começou uma tarefa e não salvou">📝 Continuar tarefa não salva</button>
     <button class="btn btn-primary" onclick="abrirModal()">+ Nova tarefa</button>
   </div>
 </header>
@@ -255,6 +256,7 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
       <button class="modal-close" onclick="fecharModal()">×</button>
     </div>
     <div class="modal-body">
+      <div id="bannerRascunho" style="display:none;background:#FFF8E1;border:1px solid #FFE082;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#795548;align-items:center;gap:8px;flex-wrap:wrap"></div>
       <div class="form-grid">
         <div class="form-group">
           <label>Empresa *</label>
@@ -285,11 +287,23 @@ tr.data-row.drag-over td{border-top:2px solid var(--verde)!important}
           </select>
         </div>
         <div class="form-group full"><label>Observações</label><textarea id="fObs" rows="2" placeholder="Notas adicionais..."></textarea></div>
+        <div class="form-group full">
+          <label>Anexos</label>
+          <div id="listaAnexos" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div id="dropAnexos" style="border:1.5px dashed var(--cinza-medio);border-radius:8px;padding:12px;text-align:center;font-size:12px;color:var(--cinza-texto);cursor:pointer;transition:all .15s"
+               onclick="document.getElementById('fAnexo').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--roxo)';this.style.background='#faf8ff'"
+               ondragleave="this.style.borderColor='';this.style.background=''"
+               ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';adicionarAnexos(event.dataTransfer.files)">
+            📎 Clique para anexar ou arraste arquivos aqui <span style="opacity:.7">(até 5 MB cada)</span>
+          </div>
+          <input type="file" id="fAnexo" multiple style="display:none" onchange="adicionarAnexos(this.files);this.value=''">
+        </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="btnExcluir" onclick="excluirTarefa()" style="margin-right:auto;display:none">🗑 Excluir</button>
-      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-secondary" onclick="cancelarTarefa()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarTarefa()">Salvar</button>
     </div>
   </div>
@@ -510,6 +524,7 @@ const FB_USERS = FB_BASE+'/usuarios.json';
 const FB_TAREFAS = FB_BASE+'/tarefas.json'; // formato antigo (lista inteira)
 const FB_TAREFAS_V2 = FB_BASE+'/tarefas_v2.json'; // cada tarefa salva separadamente pelo id
 const FB_V2_OK = FB_BASE+'/tarefas_v2_migrado.json';
+const FB_ANEXOS = FB_BASE+'/anexos'; // arquivos guardados à parte: /anexos/<id>.json
 const FB_BACKUP = FB_BASE+'/backup_antes_migracao.json';
 
 const DIAS_PT  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -577,10 +592,11 @@ async function entrar(){
   document.getElementById('btnHistorico').style.display=GESTORES.includes(perfil)?'inline-flex':'none';
   document.getElementById('btnGerenciarUsuarios').style.display=perfil===DONO?'inline-flex':'none';
   await carregarDados();
+  atualizarBotaoRascunho();
 }
 function sair(){
   if(!confirm('Trocar de perfil?'))return;
-  perfil=null;perfilSelecionado=null;
+  perfil=null;perfilSelecionado=null;atualizarBotaoRascunho();
   Object.keys(msState).forEach(k=>msState[k].clear());
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('pinInput').value='';
@@ -678,12 +694,15 @@ async function salvar(){
   tarefas.forEach(t=>{atuais.add(t.id);const j=JSON.stringify(t);if(syncSnap[t.id]!==j)patch[t.id]=t;});
   Object.keys(syncSnap).forEach(id=>{if(!atuais.has(id))patch[id]=null;});
   if(!Object.keys(patch).length){setSynced();return;}
+  const anexosAntes=[];
+  Object.keys(patch).forEach(id=>{if(syncSnap[id]){try{Object.keys(JSON.parse(syncSnap[id]).anexos||{}).forEach(a=>anexosAntes.push(a));}catch{}}});
   setSyncing();
   try{
     const r=await fetch(FB_TAREFAS_V2,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)});
     if(!r.ok)throw new Error('HTTP '+r.status);
     Object.entries(patch).forEach(([id,t])=>{if(t===null)delete syncSnap[id];else syncSnap[id]=JSON.stringify(t);});
     setSynced();
+    if(anexosAntes.length)limparAnexosOrfaos(anexosAntes);
   }catch(e){setSyncError();toast('Erro ao salvar: '+e.message,4000);}
 }
 
@@ -781,6 +800,7 @@ function toggleRespOpt(o){
   selectedResps.has(o)?selectedResps.delete(o):selectedResps.add(o);
   renderRespDrop();
   updateRespTrigger();
+  modalSujo=true;guardarRascunho();
 }
 function updateRespTrigger(){
   const txt=document.getElementById('respTriggerText');
@@ -895,7 +915,7 @@ function renderTabela(){
     ><td><input type="checkbox" class="chk-tarefa" data-idx="${i}" onchange="atualizarSelecao()" style="cursor:pointer;accent-color:var(--verde)"></td>${handle}
       <td><span class="empresa-tag">${t.empresa||''}</span></td>
       <td style="color:var(--cinza-texto);font-size:12px">${t.dia||'—'}</td>
-      <td style="font-weight:500">${t.ativ||''}</td>
+      <td style="font-weight:500">${t.ativ||''}${t.anexos&&Object.keys(t.anexos).length?` <span title="${Object.values(t.anexos).map(a=>escHtml(a.nome)).join(', ')}" style="font-size:11px;font-weight:600;color:var(--roxo-escuro);background:var(--roxo-suave);border-radius:10px;padding:1px 6px;white-space:nowrap">📎 ${Object.keys(t.anexos).length}</span>`:''}</td>
       <td style="color:#444;max-width:200px">${t.desc||''}</td>
       <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--cinza-texto)">${t.tempo||'—'}</td>
       <td>${badgeResp(t)}</td>
@@ -969,20 +989,139 @@ function abrirModal(idx=-1){
   if(idx===-1){selectedResps.clear();if((RESP_OPTS[perfil]||[]).length===1)selectedResps.add(RESP_OPTS[perfil][0]);}
   else setRespFromTask(t.resp||'');
   updateRespTrigger();
+  anexosModal=Object.entries(t.anexos||{}).map(([id,a])=>({id,...a}));anexosNovos=[];modalSujo=false;
+  renderAnexos();
+  mostrarBannerRascunho(idx===-1?null:t.id);
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('fEmpresa').focus(),50);
 }
 function editarTarefa(idx){abrirModal(idx);}
-function fecharModal(){document.getElementById('modalOverlay').classList.remove('open');fecharRespDrop();editIndex=-1;}
-function fecharSeOverlay(e){if(e.target===document.getElementById('modalOverlay'))fecharModal();}
+function fecharModal(guardar=true){if(guardar&&document.getElementById('modalOverlay').classList.contains('open'))guardarRascunho();document.getElementById('modalOverlay').classList.remove('open');fecharRespDrop();editIndex=-1;atualizarBotaoRascunho();}
+function fecharSeOverlay(e){/* clicar fora não fecha mais a tarefa, para não perder o que foi digitado */}
 
+/* ── ANEXOS ─────────────────────────────── */
+const ANEXO_MAX=5*1024*1024;
+let anexosModal=[],anexosNovos=[],modalSujo=false;
+function tamanhoTxt(b){return b>=1048576?(b/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(b/1024))+' KB';}
+function iconeArquivo(nome){const e=(nome.split('.').pop()||'').toLowerCase();return e==='pdf'?'📕':['xls','xlsx','csv'].includes(e)?'📗':['doc','docx'].includes(e)?'📘':['png','jpg','jpeg','gif','webp'].includes(e)?'🖼️':['zip','rar','7z'].includes(e)?'🗜️':'📄';}
+function lerBase64(f){return new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=()=>err(new Error('não foi possível ler '+f.name));r.readAsDataURL(f);});}
+function adicionarAnexos(files){
+  const grandes=[];
+  [...files].forEach(f=>{if(f.size>ANEXO_MAX)grandes.push(f.name);else anexosNovos.push(f);});
+  if(grandes.length)alert('Arquivo(s) acima de 5 MB não foram anexados:\n'+grandes.join('\n'));
+  renderAnexos();modalSujo=true;guardarRascunho();
+}
+function renderAnexos(){
+  const linha=(icone,nome,info,acoes,cor)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:${cor};border:1px solid #eee;font-size:12px">
+      <span style="font-size:15px">${icone}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(nome)}">${escHtml(nome)}</span>
+      <span style="color:var(--cinza-texto);white-space:nowrap">${info}</span>${acoes}</div>`;
+  const btn=(txt,fn,title)=>`<button type="button" onclick="${fn}" title="${title}" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px">${txt}</button>`;
+  document.getElementById('listaAnexos').innerHTML=
+    anexosModal.map((a,i)=>linha(iconeArquivo(a.nome),a.nome,`${a.tamanho?tamanhoTxt(a.tamanho)+' · ':''}${escHtml(a.por||'')}${a.em?' · '+a.em:''}`,
+      btn('⬇️',`baixarAnexo('${a.id}','${encodeURIComponent(a.nome).replace(/'/g,'%27')}')`,'Baixar')+btn('🗑',`removerAnexo(${i})`,'Remover'),'#f9f9f9')).join('')+
+    anexosNovos.map((f,i)=>linha(iconeArquivo(f.name),f.name,`${tamanhoTxt(f.size)} · <em>será enviado ao salvar</em>`,btn('✕',`anexosNovos.splice(${i},1);renderAnexos()`,'Tirar'),'#f0fdf7')).join('');
+}
+function removerAnexo(i){
+  if(!confirm(`Remover o anexo "${anexosModal[i].nome}"?\n(Só é apagado de vez ao clicar em Salvar.)`))return;
+  anexosModal.splice(i,1);renderAnexos();modalSujo=true;
+}
+async function baixarAnexo(id,nomeCod){
+  const nome=decodeURIComponent(nomeCod);
+  toast('⬇️ Baixando '+nome+'...',30000);
+  try{
+    const a=await fbGet(`${FB_ANEXOS}/${id}.json`);
+    if(!a||!a.dados){toast('Arquivo não encontrado',4000);return;}
+    const bin=atob(a.dados),bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([bytes],{type:a.tipo||'application/octet-stream'}));
+    const link=document.createElement('a');link.href=url;link.download=a.nome||nome;document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    toast('✓ '+nome);
+  }catch(e){toast('Erro ao baixar: '+e.message,4000);}
+}
+/* apaga do banco os arquivos que nenhuma tarefa usa mais */
+async function limparAnexosOrfaos(idsAntes){
+  const emUso=new Set();tarefas.forEach(t=>Object.keys(t.anexos||{}).forEach(id=>emUso.add(id)));
+  const apagar={};idsAntes.forEach(id=>{if(!emUso.has(id))apagar[id]=null;});
+  if(Object.keys(apagar).length){try{await fetch(FB_ANEXOS+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(apagar)});}catch{}}
+}
+/* ── RASCUNHO (tarefa não salva) ──────────
+   Guardado neste navegador enquanto você digita. Se a página fechar,
+   recarregar ou o modal for fechado sem salvar, dá para continuar depois. */
+const CAMPOS_TAREFA=['fEmpresa','fDataCal','fAtiv','fTempo','fDesc','fStatus','fObs'];
+function chaveRascunho(){return 'planning_rascunho_'+perfil;}
+function lerRascunho(){try{return JSON.parse(localStorage.getItem(chaveRascunho())||'null');}catch{return null;}}
+function apagarRascunho(){try{localStorage.removeItem(chaveRascunho());}catch{}atualizarBotaoRascunho();}
+function formTemConteudo(){return['fEmpresa','fAtiv','fDesc','fObs'].some(id=>document.getElementById(id).value.trim())||anexosNovos.length>0;}
+function guardarRascunho(){
+  if(!perfil||!modalSujo||!document.getElementById('modalOverlay').classList.contains('open'))return;
+  if(!formTemConteudo())return;
+  const r={editId:editIndex>=0&&tarefas[editIndex]?tarefas[editIndex].id:null,campos:{},resp:[...selectedResps],arquivos:anexosNovos.map(f=>f.name),em:Date.now()};
+  CAMPOS_TAREFA.forEach(id=>r.campos[id]=document.getElementById(id).value);
+  try{localStorage.setItem(chaveRascunho(),JSON.stringify(r));}catch{}
+}
+function aplicarRascunho(r){
+  CAMPOS_TAREFA.forEach(id=>{if(r.campos[id]!==undefined)document.getElementById(id).value=r.campos[id];});
+  selectedResps.clear();(r.resp||[]).forEach(x=>selectedResps.add(x));updateRespTrigger();
+  document.getElementById('bannerRascunho').style.display='none';
+  modalSujo=true;
+  if(r.arquivos&&r.arquivos.length)toast('📎 Selecione de novo os anexos: '+r.arquivos.join(', '),6000);
+}
+function horaRascunho(r){const d=new Date(r.em);return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function mostrarBannerRascunho(editId){
+  const b=document.getElementById('bannerRascunho');b.style.display='none';
+  const r=lerRascunho();if(!r||(r.editId||null)!==(editId||null))return;
+  b.innerHTML=`<span style="flex:1">📝 Você tem ${editId?'alterações não salvas desta tarefa':'uma tarefa não salva'} de <strong>${horaRascunho(r)}</strong>${r.campos.fAtiv||r.campos.fEmpresa?` (<strong>${[r.campos.fEmpresa,r.campos.fAtiv].filter(Boolean).map(escHtml).join(' — ')}</strong>)`:''}.</span>
+    <button type="button" class="btn btn-primary" style="padding:4px 10px;font-size:12px" onclick="aplicarRascunho(lerRascunho())">Continuar</button>
+    <button type="button" class="btn" style="padding:4px 10px;font-size:12px;background:#fff;border:1px solid #e0c97a;color:#795548" onclick="apagarRascunho();document.getElementById('bannerRascunho').style.display='none'">Descartar</button>`;
+  b.style.display='flex';
+}
+function continuarRascunho(){
+  const r=lerRascunho();if(!r)return;
+  let idx=-1;
+  if(r.editId){idx=tarefas.findIndex(t=>t.id===r.editId);if(idx===-1){toast('A tarefa original não existe mais; abrindo como nova',4000);r.editId=null;}}
+  abrirModal(idx);
+  aplicarRascunho(r);
+}
+function atualizarBotaoRascunho(){
+  const r=perfil?lerRascunho():null;
+  const btn=document.getElementById('btnRascunho');if(!btn)return;
+  btn.style.display=r?'inline-flex':'none';
+  if(r)btn.title=`Começada em ${horaRascunho(r)}${r.campos.fAtiv?': '+r.campos.fAtiv:''}`;
+}
+function cancelarTarefa(){
+  if(modalSujo&&formTemConteudo()&&!confirm('Descartar o que foi digitado nesta tarefa?'))return;
+  fecharModal(false);apagarRascunho();
+}
+document.addEventListener('input',e=>{if(e.target&&CAMPOS_TAREFA.includes(e.target.id)){modalSujo=true;guardarRascunho();}});
+document.addEventListener('change',e=>{if(e.target&&CAMPOS_TAREFA.includes(e.target.id)){modalSujo=true;guardarRascunho();}});
+window.addEventListener('beforeunload',e=>{
+  if(document.getElementById('modalOverlay').classList.contains('open')&&modalSujo&&formTemConteudo()){guardarRascunho();e.preventDefault();e.returnValue='';}
+});
 async function salvarTarefa(){
   const empresa=document.getElementById('fEmpresa').value.trim();
   const ativ=document.getElementById('fAtiv').value.trim();
   if(!empresa||!ativ){alert('Preencha Empresa e Atividade.');return;}
   if(!selectedResps.size){alert('Selecione pelo menos um responsável.');return;}
   const isNova=editIndex===-1;
+  const anterior=isNova?{}:tarefas[editIndex];
+  // envia os arquivos novos antes de gravar a tarefa
+  let anexos={};
+  anexosModal.forEach(a=>{const{id,...m}=a;anexos[id]=m;});
+  if(anexosNovos.length){
+    toast('📎 Enviando anexos...',60000);
+    try{
+      for(const f of anexosNovos){
+        const id=novoId();
+        await fbPut(`${FB_ANEXOS}/${id}.json`,{nome:f.name,tipo:f.type||'application/octet-stream',dados:await lerBase64(f)});
+        anexos[id]={nome:f.name,tipo:f.type||'',tamanho:f.size,por:perfil,em:new Date().toLocaleDateString('pt-BR')};
+      }
+    }catch(e){toast('Erro ao enviar anexo: '+e.message,5000);return;}
+  }
   const nova={
+    ...anterior,
+    id:isNova?novoId():anterior.id,
+    anexos:Object.keys(anexos).length?anexos:null,
     empresa,ativ,
     dia:calToDia(document.getElementById('fDataCal').value),
     desc:document.getElementById('fDesc').value.trim(),
@@ -993,9 +1132,10 @@ async function salvarTarefa(){
     criadoPor:isNova?perfil:(tarefas[editIndex].criadoPor||perfil),
     _ord:isNova?tarefas.length:(tarefas[editIndex]._ord||editIndex),
   };
+  if(!nova.anexos)delete nova.anexos;
   if(isNova)tarefas.push(nova);
   else tarefas[editIndex]=nova;
-  fecharModal();
+  fecharModal(false);apagarRascunho();
   await salvar();
   await registrarHist(isNova?'criou':'editou',nova);
   construirMultiselects();renderStats();renderTabela();
@@ -1008,7 +1148,8 @@ async function excluirTarefa(){
   if(!confirm(`Excluir "${tarefas[editIndex].ativ||tarefas[editIndex].empresa}"?`))return;
   const t=tarefas[editIndex];
   tarefas.splice(editIndex,1);
-  fecharModal();
+  {const r=lerRascunho();if(r&&r.editId===t.id)apagarRascunho();}
+  fecharModal(false);
   await salvar();
   await registrarHist('excluiu',t);
   construirMultiselects();renderStats();renderTabela();toast('🗑 Tarefa excluída');
@@ -1515,7 +1656,7 @@ function exportarExcel(){
   XLSX.utils.book_append_sheet(wb,ts(vis),'Geral');
   XLSX.utils.book_append_sheet(wb,ts(vis.filter(t=>parseResp(t.resp).some(r=>r.toLowerCase().includes('nath')))),'Nathália');
   XLSX.utils.book_append_sheet(wb,ts(vis.filter(t=>parseResp(t.resp).some(r=>r.toLowerCase().includes('yan')))),'Yan');
-  XLSX.writeFile(wb,'Planning_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb,'Planejamento_de_fechamento_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalAmanha();fecharModalHistorico();fecharModalMes();fecharModalPin();}});

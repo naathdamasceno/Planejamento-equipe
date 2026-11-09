@@ -252,6 +252,23 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--marca-escura)}
 #toast{position:fixed;bottom:24px;right:24px;background:var(--preto);color:var(--branco);padding:11px 18px;border-radius:10px;font-size:13px;z-index:9999;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none;box-shadow:var(--shadow-lg)}
 #toast.show{opacity:1;transform:none}
 
+/* novo mês */
+.nm-passos{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end}
+.nm-seta{font-size:18px;color:var(--cinza-texto);padding-bottom:9px}
+.nm-chips{display:flex;flex-wrap:wrap;gap:6px;max-height:110px;overflow-y:auto}
+.nm-chip{padding:5px 11px;border-radius:20px;border:1px solid var(--borda-forte);background:var(--superficie);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .12s}
+.nm-chip:hover{background:var(--cinza)}
+.nm-chip.on{background:var(--preto);color:#fff;border-color:var(--preto)}
+.nm-chip small{opacity:.6;margin-left:4px}
+.nm-lista{max-height:320px;overflow-y:auto;border:1px solid var(--borda);border-radius:10px}
+.nm-grupo{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--superficie-2);border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:pointer}
+.nm-grupo span.n{font-weight:500;text-transform:none;color:var(--cinza-texto);letter-spacing:0}
+.nm-item{display:flex;align-items:center;gap:10px;padding:7px 12px 7px 34px;font-size:13px;cursor:pointer;border-bottom:1px solid #F3F4F6}
+.nm-item:hover{background:#FAFBFC}
+.nm-item .d{font-size:11px;color:var(--cinza-texto);white-space:nowrap}
+.nm-item .ja{font-size:10px;font-weight:600;color:#9A5B05;background:var(--laranja-suave);border-radius:10px;padding:1px 7px;white-space:nowrap}
+@media (max-width:640px){.nm-passos{grid-template-columns:1fr}.nm-seta{display:none}}
+
 /* ── TELAS MENORES ───────────────────────── */
 @media (max-width:900px){
   header{padding:0 14px}
@@ -601,32 +618,35 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--marca-escura)}
 
 <!-- MODAL NOVO MÊS -->
 <div class="modal-overlay" id="modalMesOverlay" onclick="fecharModalMes()">
-  <div class="modal" style="width:620px" onclick="event.stopPropagation()">
-    <div class="modal-header"><span class="modal-title">📅 Replicar para Novo Mês</span><button class="modal-close" onclick="fecharModalMes()">×</button></div>
+  <div class="modal" style="width:760px" onclick="event.stopPropagation()">
+    <div class="modal-header"><span class="modal-title">📅 Criar mês a partir de outro</span><button class="modal-close" onclick="fecharModalMes()">×</button></div>
     <div class="modal-body">
-      <div class="form-grid" style="margin-bottom:16px">
-        <div class="form-group"><label>Mês de destino *</label><select id="mesDestino"></select></div>
-        <div class="form-group"><label>Ano</label><select id="anoDestino"></select></div>
-        <div class="form-group full"><label>O que fazer com as tarefas atuais?</label>
-          <select id="opcaoMes"><option value="substituir">Substituir pelas novas (recomendado)</option><option value="adicionar">Adicionar junto às existentes</option></select>
-        </div>
+      <div class="nm-passos">
+        <div class="form-group"><label>1. Copiar tarefas da competência</label><select id="mesOrigem" onchange="mudouOrigemMes()"></select></div>
+        <div class="nm-seta">→</div>
+        <div class="form-group"><label>2. Para o mês</label><div style="display:flex;gap:6px"><select id="mesDestino" onchange="renderListaMes()" style="flex:1"></select><select id="anoDestino" onchange="renderListaMes()" style="width:90px"></select></div></div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--cinza-texto)">Selecione as tarefas</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="selecionarTodasMes(true)">Marcar todas</button>
-          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px" onclick="selecionarTodasMes(false)">Desmarcar todas</button>
-        </div>
+      <div class="form-group" style="margin-top:14px">
+        <label>3. Empresas <span style="font-weight:400;color:var(--cinza-texto)">(clique para filtrar; nenhuma marcada = todas)</span></label>
+        <div id="nmEmpresas" class="nm-chips"></div>
       </div>
-      <div id="listaTarefasMes" style="max-height:280px;overflow-y:auto;border:1.5px solid var(--cinza-medio);border-radius:10px;padding:6px"></div>
-      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#795548;line-height:1.6">
-        ⚠️ Tarefas copiadas com status <strong>Pendente</strong> e datas ajustadas pelo mesmo dia da semana.
+      <div style="display:flex;gap:8px;align-items:center;margin:14px 0 8px;flex-wrap:wrap">
+        <input type="text" id="nmBusca" placeholder="Buscar atividade ou descrição..." oninput="renderListaMes()" style="flex:1;min-width:180px;padding:8px 11px;border:1px solid var(--borda-forte);border-radius:9px;font-size:13px;outline:none">
+        <button class="btn btn-secondary" style="padding:6px 10px;font-size:12px" onclick="selecionarTodasMes(true)">Marcar as exibidas</button>
+        <button class="btn btn-secondary" style="padding:6px 10px;font-size:12px" onclick="selecionarTodasMes(false)">Desmarcar as exibidas</button>
+      </div>
+      <div id="listaTarefasMes" class="nm-lista"></div>
+      <div class="form-group" style="margin-top:14px"><label>O que fazer com as tarefas que já estão no sistema?</label>
+        <select id="opcaoMes"><option value="adicionar">Manter tudo e só adicionar as novas (recomendado)</option><option value="substituir">Apagar todas as tarefas atuais e deixar só as novas</option></select>
+      </div>
+      <div style="background:var(--superficie-2);border:1px solid var(--borda);border-radius:9px;padding:10px 12px;margin-top:12px;font-size:12px;color:var(--texto-2);line-height:1.6">
+        As cópias entram como <strong>Pendente</strong>, sem anexos, e no mesmo dia da semana (a 2ª quinta vira a 2ª quinta). Tarefas que já existem no mês de destino aparecem como <em>já existe</em> e vêm desmarcadas.
       </div>
     </div>
     <div class="modal-footer">
       <span id="contadorMes" style="margin-right:auto;font-size:13px;color:var(--cinza-texto)"></span>
       <button class="btn btn-secondary" onclick="fecharModalMes()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarNovoMes()">📅 Replicar selecionadas</button>
+      <button class="btn btn-primary" onclick="confirmarNovoMes()">📅 Criar tarefas</button>
     </div>
   </div>
 </div>
@@ -1619,50 +1639,95 @@ function renderHistorico(){
 }
 
 /* ── MODAL NOVO MÊS ─────────────────────── */
+/* ── NOVO MÊS ───────────────────────────── */
+let nmSel=new Set(),nmEmp=new Set();
+function mesDoDia(dia){const m=(dia||'').match(/^\d{2}\/(\d{2})/);return m?parseInt(m[1]):null;}
+function chaveCopia(t,dia){return [t.empresa||'',t.ativ||'',t.desc||'',dia].join('|').toLowerCase();}
+function tarefasOrigem(){const m=parseInt(document.getElementById('mesOrigem').value);return tarefas.map((t,i)=>({t,i})).filter(({t})=>podeVerTarefa(t)&&mesDoDia(t.dia)===m);}
 function abrirModalMes(){
-  const now=new Date();
-  const proxMes=(now.getMonth()+2)>12?1:(now.getMonth()+2);
-  const anoAtual=now.getFullYear();
-  document.getElementById('mesDestino').innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===proxMes?'selected':''}>${m}</option>`).join('');
-  document.getElementById('anoDestino').innerHTML=[anoAtual,anoAtual+1].map(a=>`<option value="${a}">${a}</option>`).join('');
-  const vis=tarefas.filter(t=>podeVerTarefa(t));
-  document.getElementById('listaTarefasMes').innerHTML=vis.map(t=>{
-    const idx=tarefas.indexOf(t);
-    return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">
-      <input type="checkbox" id="chk_${idx}" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--verde)" onchange="atualizarContadorMes()">
-      <span style="flex:1"><span style="font-weight:600;font-size:11px;color:var(--cinza-texto);text-transform:uppercase">${t.empresa||''}</span><span style="color:var(--cinza-texto);font-size:11px;margin:0 5px">·</span><span>${t.ativ||''}</span></span>
-      <span style="font-size:11px;color:var(--cinza-texto);flex-shrink:0">${t.dia||'—'}</span>
-    </label>`;
-  }).join('');
-  atualizarContadorMes();
+  const meses=[...new Set(tarefas.filter(t=>podeVerTarefa(t)).map(t=>mesDoDia(t.dia)).filter(Boolean))].sort((a,b)=>a-b);
+  if(!meses.length){alert('Não há tarefas com data para copiar.');return;}
+  const atual=new Date().getMonth()+1;
+  const anteriores=meses.filter(m=>m<atual);
+  const origem=anteriores.length?anteriores[anteriores.length-1]:meses[meses.length-1];
+  document.getElementById('mesOrigem').innerHTML=meses.map(m=>{const n=tarefas.filter(t=>podeVerTarefa(t)&&mesDoDia(t.dia)===m).length;return `<option value="${m}" ${m===origem?'selected':''}>${MESES_PT[m-1]} (${n} tarefas)</option>`;}).join('');
+  const dest=origem===12?1:origem+1,ano=new Date().getFullYear();
+  document.getElementById('mesDestino').innerHTML=MESES_PT.map((m,i)=>`<option value="${i+1}" ${i+1===dest?'selected':''}>${m}</option>`).join('');
+  document.getElementById('anoDestino').innerHTML=[ano,ano+1].map(a=>`<option value="${a}" ${(dest===1&&origem===12?a===ano+1:a===ano)?'selected':''}>${a}</option>`).join('');
+  document.getElementById('opcaoMes').value='adicionar';
+  document.getElementById('nmBusca').value='';
+  mudouOrigemMes();
   document.getElementById('modalMesOverlay').classList.add('open');
+}
+function mudouOrigemMes(){
+  const o=parseInt(document.getElementById('mesOrigem').value);
+  const d=o===12?1:o+1;document.getElementById('mesDestino').value=String(d);
+  nmEmp.clear();nmSel=new Set();
+  const destM=d,destA=parseInt(document.getElementById('anoDestino').value);
+  const existentes=new Set(tarefas.map(t=>chaveCopia(t,t.dia)));
+  tarefasOrigem().forEach(({t,i})=>{if(!existentes.has(chaveCopia(t,shiftDiaParaMes(t.dia,destM,destA))))nmSel.add(i);});
+  renderEmpresasMes();renderListaMes();
+}
+function renderEmpresasMes(){
+  const cont={};tarefasOrigem().forEach(({t})=>{const e=t.empresa||'(sem empresa)';cont[e]=(cont[e]||0)+1;});
+  document.getElementById('nmEmpresas').innerHTML=Object.keys(cont).sort((a,b)=>a.localeCompare(b)).map(e=>
+    `<span class="nm-chip ${nmEmp.has(e)?'on':''}" onclick="toggleEmpMes(this.dataset.e)" data-e="${escHtml(e)}">${escHtml(e)}<small>${cont[e]}</small></span>`).join('');
+}
+function toggleEmpMes(e){nmEmp.has(e)?nmEmp.delete(e):nmEmp.add(e);renderEmpresasMes();renderListaMes();}
+function exibidasMes(){
+  const busca=(document.getElementById('nmBusca').value||'').toLowerCase();
+  return tarefasOrigem().filter(({t})=>(!nmEmp.size||nmEmp.has(t.empresa||'(sem empresa)'))&&(!busca||[(t.ativ||''),(t.desc||'')].some(v=>v.toLowerCase().includes(busca))));
+}
+function renderListaMes(){
+  const destM=parseInt(document.getElementById('mesDestino').value),destA=parseInt(document.getElementById('anoDestino').value);
+  const existentes=new Set(tarefas.map(t=>chaveCopia(t,t.dia)));
+  const grupos={};exibidasMes().forEach(x=>{const e=x.t.empresa||'(sem empresa)';(grupos[e]=grupos[e]||[]).push(x);});
+  const el=document.getElementById('listaTarefasMes');
+  const nomesG=Object.keys(grupos).sort((a,b)=>a.localeCompare(b));
+  if(!nomesG.length){el.innerHTML='<div class="empty" style="padding:30px">Nenhuma tarefa com esses filtros</div>';atualizarContadorMes();return;}
+  el.innerHTML=nomesG.map(e=>{
+    const itens=grupos[e].sort((a,b)=>diaOrdem(a.t.dia)-diaOrdem(b.t.dia));
+    const marc=itens.filter(x=>nmSel.has(x.i)).length;
+    return `<div class="nm-grupo" onclick="toggleGrupoMes(this.dataset.e)" data-e="${escHtml(e)}"><input type="checkbox" ${marc===itens.length?'checked':''} ${marc>0&&marc<itens.length?'data-ind="1"':''} onclick="event.stopPropagation();toggleGrupoMes(this.parentNode.dataset.e)">${escHtml(e)} <span class="n">${marc}/${itens.length}</span></div>`+
+      itens.map(({t,i})=>{const novo=shiftDiaParaMes(t.dia,destM,destA),ja=existentes.has(chaveCopia(t,novo));
+        return `<label class="nm-item"><input type="checkbox" ${nmSel.has(i)?'checked':''} onchange="toggleItemMes(${i},this.checked)">
+          <span style="flex:1;min-width:0"><strong style="font-weight:600">${escHtml(t.ativ||'')}</strong>${t.desc?` <span style="color:var(--cinza-texto)">· ${escHtml(t.desc.split('\n')[0]).slice(0,80)}</span>`:''}</span>
+          ${ja?'<span class="ja">já existe</span>':''}<span class="d">${t.dia} → <strong>${novo}</strong></span></label>`;}).join('');
+  }).join('');
+  el.querySelectorAll('input[data-ind]').forEach(c=>c.indeterminate=true);
+  atualizarContadorMes();
+}
+function toggleItemMes(i,v){v?nmSel.add(i):nmSel.delete(i);renderListaMes();}
+function toggleGrupoMes(e){
+  const itens=exibidasMes().filter(x=>(x.t.empresa||'(sem empresa)')===e);
+  const todos=itens.every(x=>nmSel.has(x.i));
+  itens.forEach(x=>todos?nmSel.delete(x.i):nmSel.add(x.i));renderListaMes();
 }
 function fecharModalMes(){document.getElementById('modalMesOverlay').classList.remove('open');}
 function atualizarContadorMes(){
-  const vis=tarefas.filter(t=>podeVerTarefa(t));
-  const sel=vis.filter(t=>{const c=document.getElementById('chk_'+tarefas.indexOf(t));return c&&c.checked;}).length;
-  document.getElementById('contadorMes').textContent=`${sel} de ${vis.length} selecionadas`;
+  const exib=exibidasMes(),n=exib.filter(x=>nmSel.has(x.i)).length;
+  document.getElementById('contadorMes').innerHTML=`<strong style="color:var(--preto)">${n}</strong> tarefa(s) serão criadas · ${exib.length} exibida(s)`;
 }
-function selecionarTodasMes(val){
-  tarefas.filter(t=>podeVerTarefa(t)).forEach(t=>{const c=document.getElementById('chk_'+tarefas.indexOf(t));if(c)c.checked=val;});
-  atualizarContadorMes();
-}
+function selecionarTodasMes(val){exibidasMes().forEach(x=>val?nmSel.add(x.i):nmSel.delete(x.i));renderListaMes();}
 async function confirmarNovoMes(){
   const mes=parseInt(document.getElementById('mesDestino').value);
   const ano=parseInt(document.getElementById('anoDestino').value);
   const opcao=document.getElementById('opcaoMes').value;
   const nomeMes=MESES_PT[mes-1];
-  const sel=tarefas.filter(t=>{if(!podeVerTarefa(t))return false;const c=document.getElementById('chk_'+tarefas.indexOf(t));return c&&c.checked;});
+  // cria só o que está marcado E aparece com os filtros atuais
+  const sel=exibidasMes().filter(x=>nmSel.has(x.i)).map(x=>x.t).sort((a,b)=>diaOrdem(a.dia)-diaOrdem(b.dia));
   if(!sel.length){alert('Selecione pelo menos uma tarefa.');return;}
-  if(!confirm(`Replicar ${sel.length} tarefa(s) para ${nomeMes}/${ano}?`))return;
-  const novas=sel.map((t,i)=>({...t,dia:shiftDiaParaMes(t.dia,mes,ano),status:'Pendente',criadoPor:t.criadoPor||perfil,_ord:i}));
+  if(opcao==='substituir'&&!confirm(`ATENÇÃO: todas as ${tarefas.length} tarefas atuais serão apagadas e ficarão só as ${sel.length} novas de ${nomeMes}/${ano}. Continuar?`))return;
+  if(opcao!=='substituir'&&!confirm(`Criar ${sel.length} tarefa(s) em ${nomeMes}/${ano}?`))return;
+  const base=opcao==='substituir'?0:Math.max(0,...tarefas.map(t=>t._ord||0))+1;
+  const novas=sel.map((t,k)=>{const c={...t,dia:shiftDiaParaMes(t.dia,mes,ano),status:'Pendente',criadoPor:perfil,_ord:base+k};delete c.id;delete c.anexos;return c;});
   if(opcao==='substituir')tarefas=novas;
   else tarefas=[...tarefas,...novas];
   fecharModalMes();
   await salvar();
   await registrarHist('editou',{empresa:'Planejamento',ativ:'Novo mês',resp:perfil},`${novas.length} tarefas → ${nomeMes}/${ano}`);
   construirMultiselects();renderStats();renderTabela();
-  toast(`✓ ${novas.length} tarefas replicadas para ${nomeMes}/${ano}!`,3500);
+  toast(`✓ ${novas.length} tarefas criadas em ${nomeMes}/${ano}!`,3500);
 }
 
 /* ── SELEÇÃO EM LOTE ────────────────────── */

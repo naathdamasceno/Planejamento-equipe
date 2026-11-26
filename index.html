@@ -907,7 +907,11 @@ function toggleMS(key){
 function toggleOpt(key,val){msState[key].has(val)?msState[key].delete(val):msState[key].add(val);renderMSOpts(key);renderTabela();}
 function clearMS(key){msState[key].clear();renderMSOpts(key);renderTabela();}
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ms-wrap')&&!e.target.closest('#respWrap')){
+  // usa o caminho do clique (e não só o elemento), porque a lista é redesenhada ao marcar
+  // uma opção e o item clicado deixa de existir — antes isso fechava a janelinha
+  const caminho=e.composedPath?e.composedPath():[e.target];
+  const dentro=caminho.some(el=>el&&el.classList&&(el.classList.contains('ms-wrap')||el.id==='respWrap'));
+  if(!dentro){
     document.querySelectorAll('.ms-dropdown.open').forEach(d=>d.classList.remove('open'));
     document.querySelectorAll('.ms-trigger.open').forEach(t=>t.classList.remove('open'));
     fecharRespDrop();
